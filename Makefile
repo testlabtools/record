@@ -14,3 +14,11 @@ generate:
 
 clean:
 	rm -fvr dist
+
+.PHONY: deps go-deps
+
+deps: go-deps
+
+go-deps:
+	go mod download
+	cat tools.go | grep _ | awk -F'"' '{print $$2}' | xargs -P5 -tI % go install %

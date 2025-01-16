@@ -29,6 +29,9 @@ jobs:
         with:
           go-version-file: 'go.mod'
 
+      - name: Install deps
+        run: make deps -j4
+
       - name: Build
         run: make build
 

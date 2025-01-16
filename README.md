@@ -10,6 +10,7 @@ On macOS, run:
 
 ```shell
 brew bundle;
+make deps;
 ```
 
 ## Build and test
