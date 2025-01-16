@@ -1,3 +1,5 @@
 .*.sw[a-z]
 /dist
 .env
+client/api.yml
+client/client.gen.go
