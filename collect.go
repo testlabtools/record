@@ -6,6 +6,7 @@ import (
 	"io"
 	"log/slog"
 	"os"
+	"path"
 	"path/filepath"
 	"strconv"
 
@@ -111,12 +112,24 @@ func dirExists(path string) bool {
 	return info.IsDir()
 }
 
-func readDir(dir string, limit int) (map[string][]byte, error) {
+func fileExists(path string) bool {
+	info, err := os.Stat(path)
+	if os.IsNotExist(err) {
+		return false
+	}
+	if err != nil {
+		return false
+	}
+	return info.Mode().IsRegular()
+}
+
+func readReports(dir string, limit int) (map[string][]byte, error) {
 	if dir == "" || !dirExists(dir) {
 		return nil, nil
 	}
 
 	files := make(map[string][]byte)
+	i := 0
 
 	err := filepath.WalkDir(dir, func(path string, d os.DirEntry, err error) error {
 		if err != nil {
@@ -139,8 +152,10 @@ func readDir(dir string, limit int) (map[string][]byte, error) {
 			return fmt.Errorf("failed to read file %q: %w", path, err)
 		}
 
-		// Store the file content using the full path
-		files[path] = content
+		// Store the file content using short file names
+		i++
+		name := fmt.Sprintf("reports/%d%s", i, filepath.Ext(path))
+		files[name] = content
 
 		if len(files) > limit {
 			// Avoid bundling a whole repo.
@@ -153,19 +168,71 @@ func readDir(dir string, limit int) (map[string][]byte, error) {
 	return files, err
 }
 
+func (c *Collector) findCodeOwners(dir string) string {
+	// https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners#codeowners-file-location
+	names := []string{
+		".github/CODEOWNERS",
+		"CODEOWNERS",
+		"docs/CODEOWNERS",
+	}
+
+	for _, name := range names {
+		file := path.Join(dir, name)
+		if fileExists(file) {
+			return file
+		}
+	}
+	return ""
+}
+
+func (c *Collector) addCodeOwners(files *map[string][]byte) error {
+	repo := c.options.Repo
+	file := c.findCodeOwners(repo)
+
+	if file == "" {
+		c.log.Warn("missing CODEOWNERS", "file", file, "repo", repo)
+		return nil
+	}
+
+	c.log.Info("found CODEOWNERS", "file", file, "repo", repo)
+
+	f, err := os.Open(file)
+	if err != nil {
+		return fmt.Errorf("failed to open %q: %w", file, err)
+	}
+	defer f.Close()
+
+	buf, err := io.ReadAll(f)
+	if err != nil {
+		return fmt.Errorf("failed to read %q: %w", file, err)
+	}
+
+	(*files)["CODEOWNERS"] = buf
+
+	return nil
+}
+
 func (c *Collector) Bundle(initial bool, w io.Writer) error {
 	dir := c.options.Reports
 	c.log.Debug("read file reports", "dir", dir, "max", c.options.MaxReports)
-	files, err := readDir(dir, c.options.MaxReports)
+	files, err := readReports(dir, c.options.MaxReports)
 	if err != nil {
 		return fmt.Errorf("failed to read reports (%q): %w", dir, err)
 	}
 
-	// TODO if initial run: add codeowners, git data, etc.
-
 	if len(files) == 0 {
-		c.log.Warn("no files found for bundle", "reports", dir)
+		c.log.Warn("no file reports found for bundle", "reports", dir)
 		return nil
+	}
+
+	if initial {
+		// Add CODEOWNERS file to the initial run only. This avoids storing the
+		// same information in each run bundle file.
+		if err := c.addCodeOwners(&files); err != nil {
+			return fmt.Errorf("failed to add CODEOWNERS: %w", err)
+		}
+
+		// TODO if initial run: add git data, etc.
 	}
 
 	for name, content := range files {

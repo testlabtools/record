@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites name="e2e tests" tests="2" failures="0" errors="0" time="1.0">
+  <testsuite name="first" tests="2" failures="0" skipped="0" timestamp="2025-01-09T20:45:22" errors="0" time="1.0">
+    <testcase classname="first" name="test1" time="0.5" file="e2e/first.spec.ts"></testcase>
+    <testcase classname="first" name="test2" time="0.5" file="e2e/first.spec.ts"></testcase>
+  </testsuite>
+</testsuites>

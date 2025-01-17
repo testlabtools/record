@@ -71,5 +71,5 @@ func init() {
 	// is called directly, e.g.:
 	uploadCmd.Flags().String("started", "", "set run's start time (ISO 8601 format)")
 
-	uploadCmd.Flags().String("reports", "", "path to the JUnit reports directory")
+	uploadCmd.Flags().String("reports", "junit-reports", "path to the JUnit reports directory")
 }

@@ -17,7 +17,7 @@ func TestUploadFromGithub(t *testing.T) {
 		name     string
 		options  UploadOptions
 		env      map[string]string
-		expected []string
+		expected map[string]string
 		err      string
 	}{
 		{
@@ -25,9 +25,21 @@ func TestUploadFromGithub(t *testing.T) {
 			options: UploadOptions{
 				Reports: "testdata/basic/reports",
 			},
-			expected: []string{
-				"testdata/basic/reports/e2e-1.xml",
-				"testdata/basic/reports/e2e-2.xml",
+			expected: map[string]string{
+				"testdata/basic/reports/e2e-1.xml": "reports/1.xml",
+				"testdata/basic/reports/e2e-2.xml": "reports/2.xml",
+			},
+		},
+		{
+			name: "github",
+			options: UploadOptions{
+				Reports: "testdata/github/reports",
+				Repo:    "testdata/github/repo",
+			},
+			expected: map[string]string{
+				"testdata/github/reports/e2e-1.xml":       "reports/1.xml",
+				"testdata/github/reports/e2e-2.xml":       "reports/2.xml",
+				"testdata/github/repo/.github/CODEOWNERS": "CODEOWNERS",
 			},
 		},
 		{
@@ -35,7 +47,7 @@ func TestUploadFromGithub(t *testing.T) {
 			options: UploadOptions{
 				Reports: "testdata/unknown/reports",
 			},
-			expected: []string{},
+			expected: map[string]string{},
 		},
 		{
 			name: "empty key",
@@ -87,9 +99,9 @@ func TestUploadFromGithub(t *testing.T) {
 	}
 }
 
-func mustReadFiles(files []string) map[string][]byte {
+func mustReadFiles(files map[string]string) map[string][]byte {
 	contents := make(map[string][]byte)
-	for _, file := range files {
+	for file, key := range files {
 		f, err := os.Open(file)
 		if err != nil {
 			panic(err)
@@ -99,7 +111,7 @@ func mustReadFiles(files []string) map[string][]byte {
 		if err != nil {
 			panic(err)
 		}
-		contents[file] = content
+		contents[key] = content
 	}
 	return contents
 }

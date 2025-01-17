@@ -25,10 +25,12 @@ function add() {
 
 set_user "User One" "user1@org"
 
-cat -> "$repo/CODEOWNERS" <<EOF
+mkdir "$repo/.github"
+
+cat -> "$repo/.github/CODEOWNERS" <<EOF
 *.go @org/team1
 e2e/ @org/team2
 EOF
 
 # Add codeowners
-add "add owners" CODEOWNERS
+add "add owners" .github/CODEOWNERS

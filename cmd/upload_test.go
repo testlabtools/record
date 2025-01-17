@@ -3,7 +3,10 @@ package main
 import (
 	"context"
 	"log/slog"
+	"maps"
 	"os"
+	"slices"
+	"sort"
 	"testing"
 	"time"
 
@@ -54,6 +57,28 @@ func TestUploadCommand(t *testing.T) {
 			check: func(t *testing.T, srv *fake.FakeServer) {
 				// No run files for the default upload command.
 				assert.Empty(t, srv.Files)
+			},
+		},
+		{
+			name: "github",
+			args: []string{
+				"--reports", "../testdata/github/reports",
+				"--repo", "../testdata/github/repo",
+			},
+			check: func(t *testing.T, srv *fake.FakeServer) {
+				assert.Len(t, srv.Files, 1)
+
+				files, err := srv.ExtractTar(0)
+				assert.NoError(t, err)
+
+				names := slices.Collect(maps.Keys(files))
+				sort.Strings(names)
+				expected := []string{
+					"CODEOWNERS",
+					"reports/1.xml",
+					"reports/2.xml",
+				}
+				assert.Equal(t, expected, names)
 			},
 		},
 		{
