@@ -8,6 +8,8 @@ import (
 	"strconv"
 
 	"github.com/testlabtools/record/client"
+	"github.com/testlabtools/record/tar"
+	"github.com/testlabtools/record/zstd"
 )
 
 type Collector struct {
@@ -107,7 +109,7 @@ func (c *Collector) Bundle(initial bool, w io.Writer) error {
 	}
 
 	var raw bytes.Buffer
-	if err := createTarball(files, &raw); err != nil {
+	if err := tar.Create(files, &raw); err != nil {
 		return fmt.Errorf("failed to create tarball: %w", err)
 	}
 
@@ -116,7 +118,7 @@ func (c *Collector) Bundle(initial bool, w io.Writer) error {
 		"rawSize", raw.Len(),
 	)
 
-	if err := compressZstd(&raw, w); err != nil {
+	if err := zstd.Compress(&raw, w); err != nil {
 		return fmt.Errorf("failed to compress tarball: %w", err)
 	}
 

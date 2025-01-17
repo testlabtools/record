@@ -7,6 +7,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/testlabtools/record/client"
+	"github.com/testlabtools/record/fake"
 )
 
 func TestUploadFromGithub(t *testing.T) {
@@ -38,10 +39,10 @@ func TestUploadFromGithub(t *testing.T) {
 			l := slogt.New(t)
 			assert := assert.New(t)
 
-			srv := newFakeServer(t, l, client.Github)
+			srv := fake.NewServer(t, l, client.Github)
 			defer srv.Close()
 
-			env := srv.env
+			env := srv.Env
 			if tt.env != nil {
 				env = tt.env
 			}
@@ -56,13 +57,13 @@ func TestUploadFromGithub(t *testing.T) {
 			}
 
 			if len(tt.expected) > 0 {
-				assert.Len(srv.files, 1)
-				files, err := srv.extractFiles(0)
+				assert.Len(srv.Files, 1)
+				files, err := srv.ExtractTar(0)
 				assert.NoError(err)
 
 				assert.Equal(tt.expected, files)
 			} else {
-				assert.Empty(srv.files)
+				assert.Empty(srv.Files)
 			}
 		})
 	}

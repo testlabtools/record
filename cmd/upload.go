@@ -2,6 +2,7 @@ package main
 
 import (
 	"log/slog"
+	"time"
 
 	"github.com/spf13/cobra"
 	"github.com/testlabtools/record"
@@ -17,13 +18,33 @@ var uploadCmd = &cobra.Command{
 	// Cobra is a CLI library for Go that empowers applications.
 	// This application is a tool to generate the needed files
 	// to quickly create a Cobra application.`,
-	Run: func(cmd *cobra.Command, args []string) {
+	RunE: func(cmd *cobra.Command, args []string) error {
 		l := slog.Default()
 		env := getEnv()
-		record.Upload(l, env, record.UploadOptions{
-			Repo: repo,
-		})
+		if val := cmd.Context().Value("env"); val != nil {
+			env = val.(map[string]string)
+		}
+
+		o := record.UploadOptions{
+			Repo:    cmd.Flag("repo").Value.String(),
+			Reports: cmd.Flag("reports").Value.String(),
+		}
+
+		started := cmd.Flag("started").Value.String()
+		if started != "" {
+			val, err := parseStarted(started)
+			if err != nil {
+				return err
+			}
+			o.Started = &val
+		}
+
+		return record.Upload(l, env, o)
 	},
+}
+
+func parseStarted(s string) (time.Time, error) {
+	return time.Parse("2006-01-02T15:04:05-0700", s)
 }
 
 func init() {
@@ -37,5 +58,7 @@ func init() {
 
 	// Cobra supports local flags which will only run when this command
 	// is called directly, e.g.:
-	// uploadCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+	uploadCmd.Flags().String("started", "", "set run's start time (ISO 8601 format)")
+
+	uploadCmd.Flags().String("reports", "", "path to the JUnit reports directory")
 }

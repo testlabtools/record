@@ -25,9 +25,14 @@ func getBody[T interface{}](r io.Reader) T {
 }
 
 type UploadOptions struct {
+	// Repo is the path to the git repository directory.
 	Repo string
 
-	// TODO
+	// Reports is the path to the JUnit reports directory.
+	Reports string
+
+	// Started is the start time of the run. If nil, `NOW()` is returned from
+	// the API.
 	Started *time.Time
 }
 

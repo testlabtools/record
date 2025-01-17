@@ -1,4 +1,4 @@
-package record
+package zstd
 
 import (
 	"bytes"
@@ -8,8 +8,8 @@ import (
 	"github.com/klauspost/compress/zstd"
 )
 
-// compressZstd compresses data using Zstd into the writer.
-func compressZstd(data *bytes.Buffer, w io.Writer) error {
+// Compress compresses data using Zstd into the writer.
+func Compress(data *bytes.Buffer, w io.Writer) error {
 	z, err := zstd.NewWriter(w)
 	if err != nil {
 		return fmt.Errorf("failed to create Zstd writer: %w", err)
@@ -26,8 +26,8 @@ func compressZstd(data *bytes.Buffer, w io.Writer) error {
 	return nil
 }
 
-// decompressZstd decompresses compressed data using Zstd into the writer.
-func decompressZstd(r io.Reader, w io.Writer) error {
+// Decompress decompresses compressed data using Zstd into the writer.
+func Decompress(r io.Reader, w io.Writer) error {
 	z, err := zstd.NewReader(r)
 	if err != nil {
 		return fmt.Errorf("failed to create Zstd reader: %w", err)

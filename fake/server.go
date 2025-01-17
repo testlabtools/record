@@ -1,4 +1,4 @@
-package record
+package fake
 
 import (
 	"bytes"
@@ -13,16 +13,20 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/testlabtools/record/client"
+	"github.com/testlabtools/record/tar"
+	"github.com/testlabtools/record/zstd"
 )
+
+const HeaderAPIKey = "X-API-Key"
 
 type FakeServer struct {
 	mux    *http.ServeMux
 	server *httptest.Server
 
-	env map[string]string
+	Env map[string]string
 
-	runs     map[string]client.CIRunRequest
-	files    [][]byte
+	Runs     map[string]client.CIRunRequest
+	Files    [][]byte
 	fileUrls []string
 	status   map[int]client.RunFileUploadStatus
 }
@@ -31,7 +35,7 @@ func (s *FakeServer) Close() {
 	s.server.Close()
 }
 
-func newFakeServer(t *testing.T, l *slog.Logger, ci client.CIProviderName) *FakeServer {
+func NewServer(t *testing.T, l *slog.Logger, ci client.CIProviderName) *FakeServer {
 	t.Helper()
 
 	assert := assert.New(t)
@@ -49,9 +53,9 @@ func newFakeServer(t *testing.T, l *slog.Logger, ci client.CIProviderName) *Fake
 		mux:    mux,
 		server: server,
 
-		env: env,
+		Env: env,
 
-		runs:   make(map[string]client.CreateRunJSONRequestBody),
+		Runs:   make(map[string]client.CreateRunJSONRequestBody),
 		status: make(map[int]client.RunFileUploadStatus),
 	}
 
@@ -96,8 +100,8 @@ func newFakeServer(t *testing.T, l *slog.Logger, ci client.CIProviderName) *Fake
 
 		// Determine if runId-group pair is the first created run.
 		idx := fmt.Sprintf("%d-%s", run.RunId, run.Group)
-		_, ok := fs.runs[idx]
-		fs.runs[idx] = run
+		_, ok := fs.Runs[idx]
+		fs.Runs[idx] = run
 		created := !ok
 
 		status := http.StatusOK
@@ -107,7 +111,7 @@ func newFakeServer(t *testing.T, l *slog.Logger, ci client.CIProviderName) *Fake
 
 		w.WriteHeader(status)
 		resp := client.CIRunResponse{
-			Id: fmt.Sprint(len(fs.runs)),
+			Id: fmt.Sprint(len(fs.Runs)),
 		}
 		json.NewEncoder(w).Encode(resp)
 	}
@@ -142,7 +146,7 @@ func newFakeServer(t *testing.T, l *slog.Logger, ci client.CIProviderName) *Fake
 
 	postS3File := func(w http.ResponseWriter, r *http.Request) {
 		body, _ := io.ReadAll(r.Body)
-		fs.files = append(fs.files, body)
+		fs.Files = append(fs.Files, body)
 		w.WriteHeader(http.StatusOK)
 	}
 
@@ -165,28 +169,28 @@ func newFakeServer(t *testing.T, l *slog.Logger, ci client.CIProviderName) *Fake
 }
 
 func (s *FakeServer) useGitHub() {
-	s.env["GITHUB_ACTIONS"] = "true"
-	s.env["GITHUB_ACTOR"] = "smvv"
-	s.env["GITHUB_REF"] = "refs/heads/feature-branch-1"
-	s.env["GITHUB_REF_NAME"] = "feature-branch-1"
-	s.env["GITHUB_REF_TYPE"] = "branch"
-	s.env["GITHUB_REPOSITORY"] = "octocat/Hello-World"
-	s.env["GITHUB_RUN_ATTEMPT"] = "1"
-	s.env["GITHUB_RUN_ID"] = "1658821493"
-	s.env["GITHUB_RUN_NUMBER"] = "3"
-	s.env["GITHUB_SHA"] = "ffac537e6cbbf934b08745a378932722df287a53"
+	s.Env["GITHUB_ACTIONS"] = "true"
+	s.Env["GITHUB_ACTOR"] = "smvv"
+	s.Env["GITHUB_REF"] = "refs/heads/feature-branch-1"
+	s.Env["GITHUB_REF_NAME"] = "feature-branch-1"
+	s.Env["GITHUB_REF_TYPE"] = "branch"
+	s.Env["GITHUB_REPOSITORY"] = "octocat/Hello-World"
+	s.Env["GITHUB_RUN_ATTEMPT"] = "1"
+	s.Env["GITHUB_RUN_ID"] = "1658821493"
+	s.Env["GITHUB_RUN_NUMBER"] = "3"
+	s.Env["GITHUB_SHA"] = "ffac537e6cbbf934b08745a378932722df287a53"
 }
 
-func (s *FakeServer) extractFiles(i int) (map[string][]byte, error) {
-	file := s.files[i]
+func (s *FakeServer) ExtractTar(i int) (map[string][]byte, error) {
+	file := s.Files[i]
 	r := bytes.NewReader(file)
 
 	var buf bytes.Buffer
-	if err := decompressZstd(r, &buf); err != nil {
+	if err := zstd.Decompress(r, &buf); err != nil {
 		return nil, err
 	}
 
-	return extractTarball(&buf)
+	return tar.Extract(&buf)
 }
 
 func mustDecode(r io.ReadCloser, v interface{}) {
