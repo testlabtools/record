@@ -82,6 +82,17 @@ func TestUploadCommand(t *testing.T) {
 			},
 		},
 		{
+			name: "github debug",
+			args: []string{
+				"--debug",
+				"--reports", "../testdata/github/reports",
+				"--repo", "../testdata/github/repo",
+			},
+			check: func(t *testing.T, srv *fake.FakeServer) {
+				assert.Len(t, srv.Files, 1)
+			},
+		},
+		{
 			name: "explicit started",
 			args: []string{
 				"--started", "2016-07-25T02:22:33+0000",

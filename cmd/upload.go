@@ -19,15 +19,26 @@ var uploadCmd = &cobra.Command{
 	// This application is a tool to generate the needed files
 	// to quickly create a Cobra application.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		l := slog.Default()
 		env := getEnv()
 		if val := cmd.Context().Value("env"); val != nil {
 			env = val.(map[string]string)
 		}
 
+		debug := cmd.Flag("debug").Value.String() == "true"
+		if !debug {
+			debug = env["TESTLAB_DEBUG"] != ""
+		}
+
+		if debug {
+			setLogLevel(slog.LevelDebug)
+		}
+
+		l := slog.Default()
+
 		o := record.UploadOptions{
 			Repo:    cmd.Flag("repo").Value.String(),
 			Reports: cmd.Flag("reports").Value.String(),
+			Debug:   debug,
 		}
 
 		started := cmd.Flag("started").Value.String()
@@ -72,4 +83,6 @@ func init() {
 	uploadCmd.Flags().String("started", "", "set run's start time (ISO 8601 format)")
 
 	uploadCmd.Flags().String("reports", "junit-reports", "path to the JUnit reports directory")
+
+	uploadCmd.Flags().Bool("debug", false, "enable verbose debug logs")
 }

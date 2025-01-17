@@ -24,6 +24,10 @@ var rootCmd = &cobra.Command{
 	// Uncomment the following line if your bare application
 	// has an action associated with it:
 	// Run: func(cmd *cobra.Command, args []string) { },
+
+	// Dont show CLI usage on error.
+	SilenceUsage:  true,
+	SilenceErrors: true,
 }
 
 // Execute adds all child commands to the root command and sets flags appropriately.
@@ -59,7 +63,7 @@ func main() {
 	}
 }
 
-func init() {
+func setLogLevel(level slog.Level) {
 	l := slog.New(
 		Fanout(
 			tint.NewHandler(os.Stderr, &tint.Options{
@@ -73,6 +77,10 @@ func init() {
 		),
 	)
 	slog.SetDefault(l)
+}
+
+func init() {
+	setLogLevel(slog.LevelInfo)
 
 	// Here you will define your flags and configuration settings.
 	// Cobra supports persistent flags, which, if defined here,

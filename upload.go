@@ -27,11 +27,15 @@ type UploadOptions struct {
 	// the API.
 	Started *time.Time
 
-	// maxReports is the maximum number of reports that can be found in the
+	// MaxReports is the maximum number of reports that can be found in the
 	// reports directory. If it exceeds the threshold, an error is returned.
 	//
 	// If omitted (or zero), DefaulMaxReports is used.
 	MaxReports int
+
+	// Debug enables verbose log messages. By default (false), only messages
+	// with level info are visible.
+	Debug bool
 }
 
 type Uploader struct {
