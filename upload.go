@@ -14,6 +14,8 @@ import (
 
 const HeaderAPIKey = "X-API-Key"
 
+const DefaulMaxReports = 100
+
 type UploadOptions struct {
 	// Repo is the path to the git repository directory.
 	Repo string
@@ -24,6 +26,12 @@ type UploadOptions struct {
 	// Started is the start time of the run. If nil, `NOW()` is returned from
 	// the API.
 	Started *time.Time
+
+	// maxReports is the maximum number of reports that can be found in the
+	// reports directory. If it exceeds the threshold, an error is returned.
+	//
+	// If omitted (or zero), DefaulMaxReports is used.
+	MaxReports int
 }
 
 type Uploader struct {
@@ -152,6 +160,10 @@ func Upload(l *slog.Logger, osEnv map[string]string, o UploadOptions) error {
 	apiKey := osEnv["TESTLAB_KEY"]
 	if apiKey == "" {
 		return fmt.Errorf("env var TESTLAB_KEY is required")
+	}
+
+	if o.MaxReports == 0 {
+		o.MaxReports = DefaulMaxReports
 	}
 
 	l.Info("upload run", "server", server, "apiKey", mask(apiKey))

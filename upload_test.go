@@ -42,6 +42,14 @@ func TestUploadFromGithub(t *testing.T) {
 			env:  map[string]string{},
 			err:  "env var TESTLAB_KEY is required",
 		},
+		{
+			name: "too many reports",
+			options: UploadOptions{
+				Reports:    "testdata/basic/reports",
+				MaxReports: 1,
+			},
+			err: "too many files (2 > 1) found",
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

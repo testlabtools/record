@@ -111,7 +111,7 @@ func dirExists(path string) bool {
 	return info.IsDir()
 }
 
-func readDir(dir string) (map[string][]byte, error) {
+func readDir(dir string, limit int) (map[string][]byte, error) {
 	if dir == "" || !dirExists(dir) {
 		return nil, nil
 	}
@@ -141,6 +141,12 @@ func readDir(dir string) (map[string][]byte, error) {
 
 		// Store the file content using the full path
 		files[path] = content
+
+		if len(files) > limit {
+			// Avoid bundling a whole repo.
+			return fmt.Errorf("too many files (%d > %d) found", len(files), limit)
+		}
+
 		return nil
 	})
 
@@ -149,7 +155,8 @@ func readDir(dir string) (map[string][]byte, error) {
 
 func (c *Collector) Bundle(initial bool, w io.Writer) error {
 	dir := c.options.Reports
-	files, err := readDir(dir)
+	c.log.Debug("read file reports", "dir", dir, "max", c.options.MaxReports)
+	files, err := readDir(dir, c.options.MaxReports)
 	if err != nil {
 		return fmt.Errorf("failed to read reports (%q): %w", dir, err)
 	}
