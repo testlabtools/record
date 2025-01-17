@@ -43,9 +43,19 @@ var uploadCmd = &cobra.Command{
 	},
 }
 
-func parseStarted(s string) (time.Time, error) {
-	t, err := time.Parse("2006-01-02T15:04:05-0700", s)
-	return t.UTC(), err
+func parseStarted(s string) (t time.Time, err error) {
+	formats := []string{
+		time.RFC3339,
+		"2006-01-02T15:04:05-0700",
+	}
+	for _, format := range formats {
+		t, err = time.Parse(format, s)
+		if err == nil {
+			t = t.UTC()
+			return
+		}
+	}
+	return
 }
 
 func init() {

@@ -14,14 +14,33 @@ import (
 )
 
 func TestParseStarted(t *testing.T) {
-	// TODO support "2016-07-25T02:22:33Z"
-
-	assert := assert.New(t)
-	val, err := parseStarted("2016-07-25T02:22:33+0000")
-	if !assert.NoError(err) {
-		return
+	var tests = []struct {
+		name string
+		val  string
+		out  time.Time
+	}{
+		{
+			name: "iso8601",
+			val:  "2016-07-25T02:22:33+0000",
+			out:  time.Date(2016, 7, 25, 2, 22, 33, 0, time.UTC),
+		},
+		{
+			name: "rfc3339",
+			val:  "2016-07-25T02:22:33Z",
+			out:  time.Date(2016, 7, 25, 2, 22, 33, 0, time.UTC),
+		},
 	}
-	assert.Equal(time.Date(2016, 7, 25, 2, 22, 33, 0, time.UTC), val)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert := assert.New(t)
+			val, err := parseStarted(tt.val)
+			if !assert.NoError(err) {
+				return
+			}
+			assert.Equal(tt.out, val)
+		})
+	}
+
 }
 
 func TestUploadCommand(t *testing.T) {
