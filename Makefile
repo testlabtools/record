@@ -19,12 +19,17 @@ generate:
 	go generate ./...
 
 clean:
-	rm -fvr dist
+	rm -fvr dist testdata/*/repo
 
-.PHONY: deps go-deps
+.PHONY: deps go-deps fake-repos
 
-deps: go-deps
+deps: go-deps fake-repos
 
 go-deps:
 	go mod download
 	cat tools.go | grep _ | awk -F'"' '{print $$2}' | xargs -P5 -tI % go install %
+
+fake-repos: testdata/basic/repo/.git
+
+%/.git:
+	./scripts/fake-repo.sh $(@D)
