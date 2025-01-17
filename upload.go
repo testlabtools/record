@@ -156,7 +156,7 @@ func Upload(l *slog.Logger, osEnv map[string]string, o UploadOptions) error {
 
 	l.Info("upload run", "server", server, "apiKey", mask(apiKey))
 
-	collector := NewCollector(l)
+	collector := NewCollector(l, o)
 
 	env, err := collector.Env(osEnv)
 	if err != nil {
@@ -191,17 +191,21 @@ func Upload(l *slog.Logger, osEnv map[string]string, o UploadOptions) error {
 		return fmt.Errorf("failed to create run: %w", err)
 	}
 
-	l.Info("created run", "runId", run.Id, "created", created)
+	l.Info("created run", "runId", run.Id, "created", created, "reports", o.Reports)
 
 	var data bytes.Buffer
 	if err := collector.Bundle(created, &data); err != nil {
 		return fmt.Errorf("failed to bundle: %w", err)
 	}
 
-	l.Info("tarball compressed", "size", data.Len())
+	if data.Len() == 0 {
+		l.Warn("collected tarball is empty. Skip file upload")
+	} else {
+		l.Info("tarball compressed", "size", data.Len())
 
-	if err := up.uploadRunFile(ctx, run, &data); err != nil {
-		return fmt.Errorf("failed to upload run: %w", err)
+		if err := up.uploadRunFile(ctx, run, &data); err != nil {
+			return fmt.Errorf("failed to upload run: %w", err)
+		}
 	}
 
 	return nil

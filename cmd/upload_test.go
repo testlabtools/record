@@ -51,11 +51,16 @@ func TestUploadCommand(t *testing.T) {
 	}{
 		{
 			name: "default",
+			check: func(t *testing.T, srv *fake.FakeServer) {
+				// No run files for the default upload command.
+				assert.Empty(t, srv.Files)
+			},
 		},
 		{
 			name: "explicit started",
 			args: []string{
 				"--started", "2016-07-25T02:22:33+0000",
+				"--reports", "../testdata/basic/reports",
 			},
 			check: func(t *testing.T, srv *fake.FakeServer) {
 				key := srv.Env["GITHUB_RUN_ID"] + "-" + srv.Env["TESTLAB_GROUP"]
@@ -66,6 +71,8 @@ func TestUploadCommand(t *testing.T) {
 				started := time.Date(2016, 7, 25, 2, 22, 33, 0, time.UTC)
 				run := srv.Runs[key]
 				assert.Equal(t, started, *run.Started)
+
+				assert.Len(t, srv.Files, 1)
 			},
 		},
 	}

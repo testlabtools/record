@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"io"
 	"log/slog"
+	"os"
+	"path/filepath"
 	"strconv"
 
 	"github.com/testlabtools/record/client"
@@ -13,12 +15,14 @@ import (
 )
 
 type Collector struct {
-	log *slog.Logger
+	log     *slog.Logger
+	options UploadOptions
 }
 
-func NewCollector(l *slog.Logger) *Collector {
+func NewCollector(l *slog.Logger, o UploadOptions) *Collector {
 	return &Collector{
-		log: l,
+		log:     l,
+		options: o,
 	}
 }
 
@@ -96,13 +100,66 @@ func (c *Collector) Env(env map[string]string) (RunEnv, error) {
 	return RunEnv{}, fmt.Errorf("unknown CI provider")
 }
 
+func dirExists(path string) bool {
+	info, err := os.Stat(path)
+	if os.IsNotExist(err) {
+		return false
+	}
+	if err != nil {
+		return false
+	}
+	return info.IsDir()
+}
+
+func readDir(dir string) (map[string][]byte, error) {
+	if dir == "" || !dirExists(dir) {
+		return nil, nil
+	}
+
+	files := make(map[string][]byte)
+
+	err := filepath.WalkDir(dir, func(path string, d os.DirEntry, err error) error {
+		if err != nil {
+			return fmt.Errorf("failed to access path %q: %w", path, err)
+		}
+
+		if d.IsDir() {
+			// Skip directories
+			return nil
+		}
+
+		file, err := os.Open(path)
+		if err != nil {
+			return fmt.Errorf("failed to open file %q: %w", path, err)
+		}
+		defer file.Close()
+
+		content, err := io.ReadAll(file)
+		if err != nil {
+			return fmt.Errorf("failed to read file %q: %w", path, err)
+		}
+
+		// Store the file content using the full path
+		files[path] = content
+		return nil
+	})
+
+	return files, err
+}
+
 func (c *Collector) Bundle(initial bool, w io.Writer) error {
-	files := map[string][]byte{
-		"file1.txt": []byte("This is the content of file1."),
-		"file2.txt": []byte("This is the content of file2."),
+	dir := c.options.Reports
+	files, err := readDir(dir)
+	if err != nil {
+		return fmt.Errorf("failed to read reports (%q): %w", dir, err)
 	}
 
 	// TODO if initial run: add codeowners, git data, etc.
+
+	if len(files) == 0 {
+		c.log.Warn("no files found for bundle", "reports", dir)
+		return nil
+	}
 
 	for name, content := range files {
 		c.log.Debug("add tar file", "name", name, "size", len(content))

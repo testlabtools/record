@@ -1,6 +1,8 @@
 package record
 
 import (
+	"io"
+	"os"
 	"testing"
 
 	"github.com/neilotoole/slogt"
@@ -15,18 +17,25 @@ func TestUploadFromGithub(t *testing.T) {
 		name     string
 		options  UploadOptions
 		env      map[string]string
-		expected map[string][]byte
+		expected []string
 		err      string
 	}{
 		{
 			name: "default",
 			options: UploadOptions{
-				Repo: "simple",
+				Reports: "testdata/basic/reports",
 			},
-			expected: map[string][]byte{
-				"file1.txt": []byte("This is the content of file1."),
-				"file2.txt": []byte("This is the content of file2."),
+			expected: []string{
+				"testdata/basic/reports/e2e-1.xml",
+				"testdata/basic/reports/e2e-2.xml",
 			},
+		},
+		{
+			name: "empty reports",
+			options: UploadOptions{
+				Reports: "testdata/unknown/reports",
+			},
+			expected: []string{},
 		},
 		{
 			name: "empty key",
@@ -61,10 +70,28 @@ func TestUploadFromGithub(t *testing.T) {
 				files, err := srv.ExtractTar(0)
 				assert.NoError(err)
 
-				assert.Equal(tt.expected, files)
+				expected := mustReadFiles(tt.expected)
+				assert.Equal(expected, files)
 			} else {
 				assert.Empty(srv.Files)
 			}
 		})
 	}
+}
+
+func mustReadFiles(files []string) map[string][]byte {
+	contents := make(map[string][]byte)
+	for _, file := range files {
+		f, err := os.Open(file)
+		if err != nil {
+			panic(err)
+		}
+		defer f.Close()
+		content, err := io.ReadAll(f)
+		if err != nil {
+			panic(err)
+		}
+		contents[file] = content
+	}
+	return contents
 }
