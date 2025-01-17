@@ -21,7 +21,7 @@ func TestParseStarted(t *testing.T) {
 	if !assert.NoError(err) {
 		return
 	}
-	assert.Equal(time.Date(2016, 7, 25, 2, 22, 33, 0, time.FixedZone("", 0)), val)
+	assert.Equal(time.Date(2016, 7, 25, 2, 22, 33, 0, time.UTC), val)
 }
 
 func TestUploadCommand(t *testing.T) {

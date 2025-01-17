@@ -44,7 +44,8 @@ var uploadCmd = &cobra.Command{
 }
 
 func parseStarted(s string) (time.Time, error) {
-	return time.Parse("2006-01-02T15:04:05-0700", s)
+	t, err := time.Parse("2006-01-02T15:04:05-0700", s)
+	return t.UTC(), err
 }
 
 func init() {
