@@ -4,7 +4,7 @@ export CGO_ENABLED=0
 .PHONY: build test generate clean
 
 build: | generate
-	go build ${GOFLAGS} -o dist/main
+	go build ${GOFLAGS} -o dist/main ./cmd
 
 test: | generate
 	go test ./...

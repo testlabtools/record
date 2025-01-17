@@ -1,4 +1,4 @@
-package main
+package record
 
 import (
 	"bytes"
@@ -24,12 +24,11 @@ func getBody[T interface{}](r io.Reader) T {
 	return v
 }
 
-type Options struct {
-	Server string
+type UploadOptions struct {
+	Repo string
 
-	Log *slog.Logger
-
-	Client client.HttpRequestDoer
+	// TODO
+	Started *time.Time
 }
 
 type Uploader struct {
@@ -146,7 +145,7 @@ func uploadFile(ctx context.Context, url string, data io.Reader) error {
 	return nil
 }
 
-func upload(l *slog.Logger, osEnv map[string]string) error {
+func Upload(l *slog.Logger, osEnv map[string]string, o UploadOptions) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
@@ -179,9 +178,6 @@ func upload(l *slog.Logger, osEnv map[string]string) error {
 	}
 	up.Log = l
 
-	// TODO
-	var started *time.Time
-
 	run, created, err := up.createRun(ctx, client.CreateRunJSONRequestBody{
 		ActorName:      env.ActorName,
 		CiProviderName: env.CIProviderName,
@@ -194,7 +190,7 @@ func upload(l *slog.Logger, osEnv map[string]string) error {
 		RunId:          env.RunId,
 		RunNumber:      env.RunNumber,
 		CiEnv:          env.CIEnv,
-		Started:        started,
+		Started:        o.Started,
 	})
 	if err != nil {
 		return fmt.Errorf("failed to create run: %w", err)
