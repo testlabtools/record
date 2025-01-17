@@ -21,7 +21,7 @@ type FakeServer struct {
 
 	env map[string]string
 
-	runs     map[int]client.CIRunRequest
+	runs     map[string]client.CIRunRequest
 	files    [][]byte
 	fileUrls []string
 	status   map[int]client.RunFileUploadStatus
@@ -51,7 +51,7 @@ func newFakeServer(t *testing.T, l *slog.Logger, ci client.CIProviderName) *Fake
 
 		env: env,
 
-		runs:   make(map[int]client.CreateRunJSONRequestBody),
+		runs:   make(map[string]client.CreateRunJSONRequestBody),
 		status: make(map[int]client.RunFileUploadStatus),
 	}
 
@@ -94,8 +94,10 @@ func newFakeServer(t *testing.T, l *slog.Logger, ci client.CIProviderName) *Fake
 		assert.NotEmpty(run.RunId, "GITHUB_RUN_ID")
 		assert.NotEmpty(run.RunNumber, "GITHUB_RUN_NUMBER")
 
-		_, ok := fs.runs[run.RunId]
-		fs.runs[run.RunId] = run
+		// Determine if runId-group pair is the first created run.
+		idx := fmt.Sprintf("%d-%s", run.RunId, run.Group)
+		_, ok := fs.runs[idx]
+		fs.runs[idx] = run
 		created := !ok
 
 		status := http.StatusOK
