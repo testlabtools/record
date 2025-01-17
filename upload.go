@@ -3,7 +3,6 @@ package record
 import (
 	"bytes"
 	"context"
-	"encoding/json"
 	"fmt"
 	"io"
 	"log/slog"
@@ -14,15 +13,6 @@ import (
 )
 
 const HeaderAPIKey = "X-API-Key"
-
-func getBody[T interface{}](r io.Reader) T {
-	var v T
-	err := json.NewDecoder(r).Decode(&v)
-	if err != nil {
-		panic(err)
-	}
-	return v
-}
 
 type UploadOptions struct {
 	// Repo is the path to the git repository directory.
