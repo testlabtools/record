@@ -3,3 +3,4 @@
 .env
 client/api.yml
 client/client.gen.go
+/coverage.out

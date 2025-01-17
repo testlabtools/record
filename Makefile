@@ -1,13 +1,19 @@
+GO_TEST_FLAGS ?= -test.timeout 2s
+
 # Disable CGO for all builds.
 export CGO_ENABLED=0
 
-.PHONY: build test generate clean
+.PHONY: build test cov generate clean
 
 build: | generate
 	go build ${GOFLAGS} -o dist/main ./cmd
 
 test: | generate
-	go test ./...
+	go test ${GO_TEST_FLAGS} ./...
+
+cov: GO_TEST_FLAGS+=-coverprofile=coverage.out
+cov: test
+	go tool cover -html=coverage.out
 
 generate:
 	go generate ./...
