@@ -8,7 +8,7 @@ rm -rf "$repo" "$clone"
 
 # dont copy template hook files
 git init "$repo" --template=/dev/null
-git branch -m main
+git -C "$repo" branch -m main
 
 function set_user() {
     local name="$1"
