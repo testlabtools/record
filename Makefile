@@ -29,7 +29,5 @@ go-deps:
 	go mod download
 	cat tools.go | grep _ | awk -F'"' '{print $$2}' | xargs -P5 -tI % go install %
 
-fake-repos: testdata/github/repo/.git
-
-%/.git:
-	./scripts/fake-repo.sh $(@D)
+fake-repos:
+	./scripts/fake-repo.sh testdata/github/repo testdata/clone/repo

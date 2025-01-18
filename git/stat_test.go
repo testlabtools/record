@@ -7,8 +7,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestParseGitDiff(t *testing.T) {
-
+func TestParseDiffStat(t *testing.T) {
 	var tests = []struct {
 		name  string
 		input string
@@ -90,6 +89,23 @@ func TestParseGitDiff(t *testing.T) {
 				Deletions: 5,
 			},
 		},
+		{
+			name: "one file",
+			input: `commit abcdef1234
+0	5	second/bar.go
+1 file changed, 5 deletions(-)`,
+			stat: &DiffStat{
+				Commit: "abcdef1234",
+				Changes: []FileChange{
+					{
+						Deletions: 5,
+						Name:      "second/bar.go",
+					},
+				},
+				Files:     1,
+				Deletions: 5,
+			},
+		},
 	}
 	for _, tt := range tests {
 		tt := tt
@@ -99,7 +115,7 @@ func TestParseGitDiff(t *testing.T) {
 
 			r := strings.NewReader(tt.input)
 
-			stat, err := parseGitDiff(r)
+			stat, err := parseDiffStat(r)
 			if !assert.NoError(err) {
 				return
 			}
@@ -107,4 +123,31 @@ func TestParseGitDiff(t *testing.T) {
 			assert.Equal(tt.stat, stat)
 		})
 	}
+}
+
+func TestDiffStat(t *testing.T) {
+	assert := assert.New(t)
+
+	r := NewRepo("../testdata/github/repo")
+	stat, err := r.DiffStat("HEAD")
+	if !assert.NoError(err) {
+		return
+	}
+
+	assert.NotEmpty(stat.Commit)
+
+	expected := &DiffStat{
+		// Copy changing commit sha to make test stable.
+		Commit: stat.Commit,
+		Changes: []FileChange{
+			{
+				Name:       ".github/CODEOWNERS",
+				Insertions: 2,
+			},
+		},
+		Files:      1,
+		Insertions: 2,
+	}
+
+	assert.Equal(expected, stat)
 }
