@@ -12,6 +12,7 @@ import (
 
 	"github.com/neilotoole/slogt"
 	"github.com/stretchr/testify/assert"
+	"github.com/testlabtools/record"
 	"github.com/testlabtools/record/client"
 	"github.com/testlabtools/record/fake"
 )
@@ -75,6 +76,7 @@ func TestUploadCommand(t *testing.T) {
 				sort.Strings(names)
 				expected := []string{
 					"CODEOWNERS",
+					record.GitSummaryFileName,
 					"reports/1.xml",
 					"reports/2.xml",
 				}

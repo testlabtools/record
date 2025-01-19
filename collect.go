@@ -2,6 +2,7 @@ package record
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"io"
 	"log/slog"
@@ -11,6 +12,7 @@ import (
 	"strconv"
 
 	"github.com/testlabtools/record/client"
+	"github.com/testlabtools/record/git"
 	"github.com/testlabtools/record/tar"
 	"github.com/testlabtools/record/zstd"
 )
@@ -212,6 +214,41 @@ func (c *Collector) addCodeOwners(files *map[string][]byte) error {
 	return nil
 }
 
+type GitSummary struct {
+	DiffStat    *git.DiffStat    `json:"diffStat"`
+	CommitFiles []git.CommitFile `json:"commitFiles"`
+}
+
+const GitSummaryFileName = "git.json"
+
+func (c *Collector) addGitSummary(files *map[string][]byte) error {
+	repo := c.options.Repo
+
+	r := git.NewRepo(repo)
+	ds, err := r.DiffStat("HEAD")
+	if err != nil {
+		return err
+	}
+
+	cf, err := r.CommitFiles()
+	if err != nil {
+		return err
+	}
+
+	summary := GitSummary{
+		DiffStat:    ds,
+		CommitFiles: cf,
+	}
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(summary); err != nil {
+		return err
+	}
+	(*files)[GitSummaryFileName] = buf.Bytes()
+
+	return nil
+}
+
 func (c *Collector) Bundle(initial bool, w io.Writer) error {
 	dir := c.options.Reports
 	c.log.Debug("read file reports", "dir", dir, "max", c.options.MaxReports)
@@ -232,7 +269,9 @@ func (c *Collector) Bundle(initial bool, w io.Writer) error {
 			return fmt.Errorf("failed to add CODEOWNERS: %w", err)
 		}
 
-		// TODO if initial run: add git data, etc.
+		if err := c.addGitSummary(&files); err != nil {
+			return fmt.Errorf("failed to add git summary: %w", err)
+		}
 	}
 
 	for name, content := range files {

@@ -1,6 +1,8 @@
 package record
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
 	"io"
 	"os"
@@ -12,6 +14,8 @@ import (
 	"github.com/testlabtools/record/client"
 	"github.com/testlabtools/record/fake"
 )
+
+const generated = "generated"
 
 func TestUploadFromGithub(t *testing.T) {
 	var tests = []struct {
@@ -29,6 +33,7 @@ func TestUploadFromGithub(t *testing.T) {
 			expected: map[string]string{
 				"testdata/basic/reports/e2e-1.xml": "reports/1.xml",
 				"testdata/basic/reports/e2e-2.xml": "reports/2.xml",
+				GitSummaryFileName:                 generated,
 			},
 		},
 		{
@@ -41,6 +46,7 @@ func TestUploadFromGithub(t *testing.T) {
 				"testdata/github/reports/e2e-1.xml":       "reports/1.xml",
 				"testdata/github/reports/e2e-2.xml":       "reports/2.xml",
 				"testdata/github/repo/.github/CODEOWNERS": "CODEOWNERS",
+				GitSummaryFileName:                        generated,
 			},
 		},
 		{
@@ -91,7 +97,7 @@ func TestUploadFromGithub(t *testing.T) {
 				files, err := srv.ExtractTar(0)
 				assert.NoError(err)
 
-				expected := mustReadFiles(tt.expected)
+				expected := mustReadFiles(tt.expected, files)
 				assert.Equal(expected, files)
 			} else {
 				assert.Empty(srv.Files)
@@ -100,9 +106,14 @@ func TestUploadFromGithub(t *testing.T) {
 	}
 }
 
-func mustReadFiles(files map[string]string) map[string][]byte {
+func mustReadFiles(expected map[string]string, actual map[string][]byte) map[string][]byte {
 	contents := make(map[string][]byte)
-	for file, key := range files {
+	for file, key := range expected {
+		if key == generated {
+			contents[file] = actual[file]
+			continue
+		}
+
 		f, err := os.Open(file)
 		if err != nil {
 			panic(err)
@@ -131,6 +142,7 @@ func TestUploadSkipsFilesForSameRun(t *testing.T) {
 			expected: map[string]string{
 				"testdata/basic/reports/e2e-1.xml": "reports/1.xml",
 				"testdata/basic/reports/e2e-2.xml": "reports/2.xml",
+				// git.json is skipped for non-initial runs.
 			},
 		},
 		{
@@ -142,7 +154,7 @@ func TestUploadSkipsFilesForSameRun(t *testing.T) {
 			expected: map[string]string{
 				"testdata/github/reports/e2e-1.xml": "reports/1.xml",
 				"testdata/github/reports/e2e-2.xml": "reports/2.xml",
-				// CODEOWNERS is skipped for non-initial run uploads.
+				// CODEOWNERS and git.json are skipped for non-initial runs.
 			},
 		},
 	}
@@ -167,8 +179,51 @@ func TestUploadSkipsFilesForSameRun(t *testing.T) {
 			files, err := srv.ExtractTar(0)
 			assert.NoError(err)
 
-			expected := mustReadFiles(tt.expected)
+			expected := mustReadFiles(tt.expected, files)
 			assert.Equal(expected, files)
+		})
+	}
+}
+
+func TestUploadGitSummary(t *testing.T) {
+	var tests = []struct {
+		name     string
+		options  UploadOptions
+		expected map[string]string
+	}{
+		{
+			name: "github",
+			options: UploadOptions{
+				Reports: "testdata/github/reports",
+				Repo:    "testdata/github/repo",
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			l := slogt.New(t)
+			assert := assert.New(t)
+
+			srv := fake.NewServer(t, l, client.Github)
+			defer srv.Close()
+
+			err := Upload(l, srv.Env, tt.options)
+			if !assert.NoError(err) {
+				return
+			}
+
+			assert.Len(srv.Files, 1)
+			files, err := srv.ExtractTar(0)
+			assert.NoError(err)
+
+			file := files[GitSummaryFileName]
+			var summary GitSummary
+			err = json.NewDecoder(bytes.NewReader(file)).Decode(&summary)
+			assert.NoError(err)
+
+			assert.NotEmpty(summary.CommitFiles)
+			assert.NotEmpty(summary.DiffStat.Hash)
+			assert.NotEmpty(summary.DiffStat.Files)
 		})
 	}
 }
