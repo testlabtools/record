@@ -27,7 +27,7 @@ func TestParseDiffStat(t *testing.T) {
 -	-	third/baz.bin
 3 files changed, 7 insertions(+), 6 deletions(-)`,
 			stat: &DiffStat{
-				Commit: "abcdef1234",
+				Hash: "abcdef1234",
 				Changes: []FileChange{
 					{
 						Insertions: 1,
@@ -55,7 +55,7 @@ func TestParseDiffStat(t *testing.T) {
 -	-	third/baz.bin
 2 files changed, 1 insertions(+)`,
 			stat: &DiffStat{
-				Commit: "abcdef1234",
+				Hash: "abcdef1234",
 				Changes: []FileChange{
 					{
 						Insertions: 1,
@@ -76,7 +76,7 @@ func TestParseDiffStat(t *testing.T) {
 -	-	third/baz.bin
 2 files changed, 5 deletions(-)`,
 			stat: &DiffStat{
-				Commit: "abcdef1234",
+				Hash: "abcdef1234",
 				Changes: []FileChange{
 					{
 						Deletions: 5,
@@ -96,7 +96,7 @@ func TestParseDiffStat(t *testing.T) {
 0	5	second/bar.go
 1 file changed, 5 deletions(-)`,
 			stat: &DiffStat{
-				Commit: "abcdef1234",
+				Hash: "abcdef1234",
 				Changes: []FileChange{
 					{
 						Deletions: 5,
@@ -175,8 +175,8 @@ func TestDiffStat(t *testing.T) {
 			}
 
 			// Copy changing commit sha to make test stable.
-			assert.NotEmpty(stat.Commit)
-			tt.stat.Commit = stat.Commit
+			assert.NotEmpty(stat.Hash)
+			tt.stat.Hash = stat.Hash
 
 			assert.Equal(tt.stat, stat)
 		})

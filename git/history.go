@@ -10,13 +10,14 @@ import (
 )
 
 type CommitFile struct {
+	Hash      string    `json:"hash"`
 	Committed time.Time `json:"committed"`
 	Names     []string  `json:"names"`
 }
 
 func parseCommitFiles(r io.Reader) ([]CommitFile, error) {
 	var result []CommitFile
-	var currentCommit CommitFile
+	var cur CommitFile
 	var inCommit bool
 
 	scanner := bufio.NewScanner(r)
@@ -27,26 +28,29 @@ func parseCommitFiles(r io.Reader) ([]CommitFile, error) {
 		if strings.HasPrefix(line, "commit ") {
 			if inCommit {
 				// Finish the current commit
-				result = append(result, currentCommit)
-				currentCommit = CommitFile{}
+				result = append(result, cur)
+				cur = CommitFile{}
 			}
 
-			commitDate := strings.TrimPrefix(line, "commit ")
+			fields := strings.Fields(line)
+			cur.Hash = fields[1]
+
+			commitDate := fields[2]
 			parsedTime, err := time.Parse("2006-01-02", commitDate)
 			if err != nil {
 				return nil, fmt.Errorf("invalid date format: %s", commitDate)
 			}
-			currentCommit.Committed = parsedTime
+			cur.Committed = parsedTime
 			inCommit = true
 		} else if line != "" {
 			// Collect file names
-			currentCommit.Names = append(currentCommit.Names, line)
+			cur.Names = append(cur.Names, line)
 		}
 	}
 
 	if inCommit {
 		// Append the last commit if it exists
-		result = append(result, currentCommit)
+		result = append(result, cur)
 	}
 
 	if err := scanner.Err(); err != nil {
@@ -63,7 +67,7 @@ func (r Repo) CommitFiles() ([]CommitFile, error) {
 		"log",
 		fmt.Sprintf("--since=%ddays", r.MaxDays),
 		"--name-only",
-		"--pretty=format:commit %cs",
+		"--pretty=format:commit %H %cs",
 	)
 
 	stdout, err := cmd.StdoutPipe()

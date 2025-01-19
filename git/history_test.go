@@ -20,32 +20,36 @@ func TestParseCommitFiles(t *testing.T) {
 	assert := assert.New(t)
 
 	log := strings.NewReader(`
-commit 2024-10-16
+commit abcdef1234 2024-10-16
 app/loader.ts
 
-commit 2024-09-24
+commit ab12cd34ef 2024-09-24
 app/loader.ts
 packages/foo/bar.ts
 
-commit 2024-09-24
+commit abc1234def 2024-09-24
 app/baz.ts
 
-commit 2024-09-23
+commit def1234abc 2024-09-23
 app/baz.ts
 packages/quux/some.test.ts
 `)
 
 	expected := []CommitFile{
 		{
+			Hash:      "abcdef1234",
 			Committed: Date("2024-10-16"),
 			Names:     []string{"app/loader.ts"},
 		}, {
+			Hash:      "ab12cd34ef",
 			Committed: Date("2024-09-24"),
 			Names:     []string{"app/loader.ts", "packages/foo/bar.ts"},
 		}, {
+			Hash:      "abc1234def",
 			Committed: Date("2024-09-24"),
 			Names:     []string{"app/baz.ts"},
 		}, {
+			Hash:      "def1234abc",
 			Committed: Date("2024-09-23"),
 			Names:     []string{"app/baz.ts", "packages/quux/some.test.ts"},
 		},
@@ -77,10 +81,13 @@ func TestCommitFiles(t *testing.T) {
 		},
 	}
 
-	// Reset date to today to stabilize test.
+	// Reset date to today and commit hash to stabilize test.
 	for i := range commits {
 		assert.NotEmpty(commits[i].Committed)
 		commits[i].Committed = today
+
+		assert.NotEmpty(commits[i].Hash)
+		expected[i].Hash = commits[i].Hash
 	}
 
 	assert.Equal(expected, commits)

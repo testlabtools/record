@@ -11,7 +11,7 @@ import (
 )
 
 type DiffStat struct {
-	Commit     string       `json:"commit"`
+	Hash       string       `json:"hash"`
 	Changes    []FileChange `json:"changes"`
 	Files      int          `json:"files"`
 	Insertions int          `json:"insertions"`
@@ -31,7 +31,7 @@ func parseDiffStat(r io.Reader) (*DiffStat, error) {
 	for scanner.Scan() {
 		line := scanner.Text()
 		if strings.HasPrefix(line, "commit ") {
-			diffStat.Commit = strings.TrimPrefix(line, "commit ")
+			diffStat.Hash = strings.TrimPrefix(line, "commit ")
 		} else if strings.Contains(line, "\t") {
 			parts := strings.Split(line, "\t")
 			if len(parts) != 3 {
@@ -139,7 +139,7 @@ func (r Repo) DiffStat(ref string) (*DiffStat, error) {
 			return nil, fmt.Errorf("failed to get diff stat for ref %q: %w", ref, err)
 		}
 
-		if stat.Commit == "" && stat.Files == 0 {
+		if stat.Hash == "" && stat.Files == 0 {
 			// Try next command if stat output is empty.
 			continue
 		}
