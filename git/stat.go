@@ -134,20 +134,18 @@ func (r Repo) DiffStat(ref string) (*DiffStat, error) {
 			return nil, fmt.Errorf("failed to get diff stat for ref %q: %w", ref, err)
 		}
 
-		fmt.Printf("output: %s\n", out)
-
 		stat, err := parseDiffStat(bytes.NewReader(out))
 		if err != nil {
 			return nil, fmt.Errorf("failed to get diff stat for ref %q: %w", ref, err)
 		}
 
-		fmt.Printf("stat: %+v\n", stat)
-		if stat.Files == 0 {
+		if stat.Commit == "" && stat.Files == 0 {
+			// Try next command if stat output is empty.
 			continue
 		}
 
 		return stat, nil
 	}
 
-	return nil, nil
+	return nil, fmt.Errorf("cannot get any diff stat for ref %q", ref)
 }

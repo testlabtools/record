@@ -1,6 +1,7 @@
 package git
 
 import (
+	"fmt"
 	"strings"
 	"testing"
 
@@ -126,28 +127,59 @@ func TestParseDiffStat(t *testing.T) {
 }
 
 func TestDiffStat(t *testing.T) {
-	assert := assert.New(t)
-
-	r := NewRepo("../testdata/github/repo")
-	stat, err := r.DiffStat("HEAD")
-	if !assert.NoError(err) {
-		return
-	}
-
-	assert.NotEmpty(stat.Commit)
-
-	expected := &DiffStat{
-		// Copy changing commit sha to make test stable.
-		Commit: stat.Commit,
-		Changes: []FileChange{
-			{
-				Name:       ".github/CODEOWNERS",
+	var tests = []struct {
+		name string
+		repo string
+		ref  string
+		stat *DiffStat
+	}{
+		{
+			name: "main branch",
+			repo: "github",
+			ref:  "HEAD",
+			stat: &DiffStat{
+				Changes: []FileChange{
+					{
+						Name:       ".github/CODEOWNERS",
+						Insertions: 2,
+					},
+				},
+				Files:      1,
 				Insertions: 2,
 			},
 		},
-		Files:      1,
-		Insertions: 2,
+		{
+			name: "feature branch",
+			repo: "feature",
+			ref:  "HEAD",
+			stat: &DiffStat{
+				Changes: []FileChange{
+					{
+						Name:       ".github/CODEOWNERS",
+						Insertions: 2,
+					},
+				},
+				Files:      1,
+				Insertions: 2,
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert := assert.New(t)
+
+			r := NewRepo(fmt.Sprintf("../testdata/%s/repo", tt.repo))
+			stat, err := r.DiffStat(tt.ref)
+			if !assert.NoError(err) {
+				return
+			}
+
+			// Copy changing commit sha to make test stable.
+			assert.NotEmpty(stat.Commit)
+			tt.stat.Commit = stat.Commit
+
+			assert.Equal(tt.stat, stat)
+		})
 	}
 
-	assert.Equal(expected, stat)
 }

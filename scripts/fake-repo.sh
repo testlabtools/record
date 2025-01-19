@@ -2,9 +2,9 @@
 set -eu -o pipefail
 
 repo="$1"
-clone="$2"
+feature="$2"
 
-rm -rf "$repo" "$clone"
+rm -rf "$repo" "$feature"
 
 # dont copy template hook files
 git init "$repo" --template=/dev/null
@@ -27,7 +27,7 @@ function add() {
 
 set_user "User One" "user1@org"
 
-mkdir -p "$repo/.github" "$clone"
+mkdir -p "$repo/.github" "$feature"
 
 cat -> "$repo/.github/CODEOWNERS" <<EOF
 *.go @org/team1
@@ -38,9 +38,10 @@ EOF
 add "add owners" .github/CODEOWNERS
 
 # Clone repo to have a remote.
-git clone --template=/dev/null "$repo" "$clone"
+git clone --template=/dev/null "$repo" "$feature"
+git -C "$feature" checkout -b my-feature
 
 # Set main as default remote origin branch.
-git -C "$repo" remote add origin "$(realpath $clone)"
+git -C "$repo" remote add origin "$(realpath $feature)"
 git -C "$repo" fetch origin
 git -C "$repo" branch -u origin/main
