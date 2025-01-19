@@ -1,6 +1,7 @@
 package record
 
 import (
+	"fmt"
 	"io"
 	"os"
 	"testing"
@@ -114,4 +115,60 @@ func mustReadFiles(files map[string]string) map[string][]byte {
 		contents[key] = content
 	}
 	return contents
+}
+
+func TestUploadSkipsFilesForSameRun(t *testing.T) {
+	var tests = []struct {
+		name     string
+		options  UploadOptions
+		expected map[string]string
+	}{
+		{
+			name: "default",
+			options: UploadOptions{
+				Reports: "testdata/basic/reports",
+			},
+			expected: map[string]string{
+				"testdata/basic/reports/e2e-1.xml": "reports/1.xml",
+				"testdata/basic/reports/e2e-2.xml": "reports/2.xml",
+			},
+		},
+		{
+			name: "github",
+			options: UploadOptions{
+				Reports: "testdata/github/reports",
+				Repo:    "testdata/github/repo",
+			},
+			expected: map[string]string{
+				"testdata/github/reports/e2e-1.xml": "reports/1.xml",
+				"testdata/github/reports/e2e-2.xml": "reports/2.xml",
+				// CODEOWNERS is skipped for non-initial run uploads.
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			l := slogt.New(t)
+			assert := assert.New(t)
+
+			srv := fake.NewServer(t, l, client.Github)
+			defer srv.Close()
+
+			// Fake initial run creation.
+			runKey := fmt.Sprintf("%s-e2e", srv.Env["GITHUB_RUN_ID"])
+			srv.Runs[runKey] = client.CIRunRequest{}
+
+			err := Upload(l, srv.Env, tt.options)
+			if !assert.NoError(err) {
+				return
+			}
+
+			assert.Len(srv.Files, 1)
+			files, err := srv.ExtractTar(0)
+			assert.NoError(err)
+
+			expected := mustReadFiles(tt.expected)
+			assert.Equal(expected, files)
+		})
+	}
 }
