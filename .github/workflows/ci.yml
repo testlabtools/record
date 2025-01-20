@@ -40,7 +40,7 @@ jobs:
 
       - name: Test GoReleaser
         uses: goreleaser/goreleaser-action@v6
-        if: !startsWith(github.ref, 'refs/tags/')
+        if: startsWith(github.ref, 'refs/tags/') == false
         with:
           # 'latest', 'nightly', or a semver
           version: '~> v2'
