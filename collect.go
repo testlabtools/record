@@ -10,6 +10,7 @@ import (
 	"path"
 	"path/filepath"
 	"strconv"
+	"strings"
 
 	"github.com/testlabtools/record/client"
 	"github.com/testlabtools/record/git"
@@ -20,12 +21,16 @@ import (
 type Collector struct {
 	log     *slog.Logger
 	options UploadOptions
+	repo    *git.Repo
 }
 
 func NewCollector(l *slog.Logger, o UploadOptions) *Collector {
+	r := git.NewRepo(o.Repo)
+
 	return &Collector{
 		log:     l,
 		options: o,
+		repo:    r,
 	}
 }
 
@@ -61,6 +66,12 @@ func (c *Collector) Env(env map[string]string) (RunEnv, error) {
 		return RunEnv{}, fmt.Errorf("env var TESTLAB_GROUP is required")
 	}
 
+	ref := "HEAD"
+	tags, err := c.repo.TagsPointedAt(ref)
+	if err != nil {
+		return RunEnv{}, fmt.Errorf("failed to get tags pointed at ref %q: %w", ref, err)
+	}
+
 	if env["GITHUB_ACTIONS"] != "" {
 		ciEnv := make(map[string]interface{})
 		extra := []string{
@@ -76,6 +87,10 @@ func (c *Collector) Env(env map[string]string) (RunEnv, error) {
 				continue
 			}
 			ciEnv[key] = val
+		}
+
+		if len(tags) > 0 {
+			ciEnv["GIT_TAGS_POINTED_AT"] = strings.Join(tags, ";")
 		}
 
 		re := RunEnv{
@@ -222,15 +237,12 @@ type GitSummary struct {
 const GitSummaryFileName = "git.json"
 
 func (c *Collector) addGitSummary(files *map[string][]byte) error {
-	repo := c.options.Repo
-
-	r := git.NewRepo(repo)
-	ds, err := r.DiffStat("HEAD")
+	ds, err := c.repo.DiffStat("HEAD")
 	if err != nil {
 		return err
 	}
 
-	cf, err := r.CommitFiles()
+	cf, err := c.repo.CommitFiles()
 	if err != nil {
 		return err
 	}

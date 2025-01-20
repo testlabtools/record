@@ -17,5 +17,8 @@ func (r *Repo) TagsPointedAt(ref string) ([]string, error) {
 		return nil, err
 	}
 	lines := strings.TrimSpace(string(out))
+	if lines == "" {
+		return nil, nil
+	}
 	return strings.Split(lines, "\n"), nil
 }

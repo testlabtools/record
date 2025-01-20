@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"strings"
 	"testing"
 
 	"github.com/neilotoole/slogt"
@@ -185,18 +186,34 @@ func TestUploadSkipsFilesForSameRun(t *testing.T) {
 	}
 }
 
-func TestUploadGitSummary(t *testing.T) {
+func TestUploadAddsGitTags(t *testing.T) {
 	var tests = []struct {
-		name     string
-		options  UploadOptions
-		expected map[string]string
+		name    string
+		options UploadOptions
+		tags    []string
 	}{
+		{
+			name: "default",
+			options: UploadOptions{
+				Reports: "testdata/basic/reports",
+			},
+			tags: nil,
+		},
 		{
 			name: "github",
 			options: UploadOptions{
 				Reports: "testdata/github/reports",
 				Repo:    "testdata/github/repo",
 			},
+			tags: []string{"1.0.2"},
+		},
+		{
+			name: "feature",
+			options: UploadOptions{
+				Reports: "testdata/feature/reports",
+				Repo:    "testdata/feature/repo",
+			},
+			tags: []string{"1.0.2", "2.my-feature.3"},
 		},
 	}
 	for _, tt := range tests {
@@ -209,6 +226,62 @@ func TestUploadGitSummary(t *testing.T) {
 
 			err := Upload(l, srv.Env, tt.options)
 			if !assert.NoError(err) {
+				return
+			}
+
+			runKey := fmt.Sprintf("%s-e2e", srv.Env["GITHUB_RUN_ID"])
+			run := srv.Runs[runKey]
+
+			env := *run.CiEnv
+			val := env["GIT_TAGS_POINTED_AT"]
+			var tags []string
+			if val != nil {
+				tags = strings.Split(val.(string), ";")
+			}
+
+			assert.Equal(tt.tags, tags)
+		})
+	}
+}
+
+func TestUploadGitSummary(t *testing.T) {
+	var tests = []struct {
+		name     string
+		options  UploadOptions
+		expected bool
+	}{
+		{
+			name: "github",
+			options: UploadOptions{
+				Reports: "testdata/github/reports",
+				Repo:    "testdata/github/repo",
+			},
+			expected: true,
+		},
+		{
+			name: "feature",
+			options: UploadOptions{
+				Reports: "testdata/feature/reports",
+				Repo:    "testdata/feature/repo",
+			},
+			expected: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			l := slogt.New(t)
+			assert := assert.New(t)
+
+			srv := fake.NewServer(t, l, client.Github)
+			defer srv.Close()
+
+			err := Upload(l, srv.Env, tt.options)
+			if !assert.NoError(err) {
+				return
+			}
+
+			if !tt.expected {
+				assert.Empty(srv.Files)
 				return
 			}
 
