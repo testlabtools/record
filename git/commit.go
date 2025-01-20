@@ -16,7 +16,7 @@ func (r *Repo) CommitInfo(ref string) (*CommitInfo, error) {
 		"-C", r.Dir,
 		"log",
 		"-1",
-		"--format=%ae %s",
+		"--format=%ae%x09%s",
 		ref,
 	)
 	out, err := cmd.Output()
@@ -28,7 +28,7 @@ func (r *Repo) CommitInfo(ref string) (*CommitInfo, error) {
 		return nil, nil
 	}
 
-	fields := strings.Fields(line)
+	fields := strings.SplitN(line, "\t", 2)
 
 	return &CommitInfo{
 		AuthorEmail: fields[0],
