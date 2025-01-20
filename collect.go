@@ -72,8 +72,20 @@ func (c *Collector) Env(env map[string]string) (RunEnv, error) {
 		return RunEnv{}, fmt.Errorf("failed to get tags pointed at ref %q: %w", ref, err)
 	}
 
+	ciEnv := make(map[string]interface{})
+
+	if len(tags) > 0 {
+		ciEnv["GIT_TAGS_POINTED_AT"] = strings.Join(tags, ";")
+	}
+
+	info, err := c.repo.CommitInfo(ref)
+	if err != nil {
+		return RunEnv{}, fmt.Errorf("failed to get commit info at ref %q: %w", ref, err)
+	}
+	ciEnv["GIT_COMMIT_AUTHOR_EMAIL"] = info.AuthorEmail
+	ciEnv["GIT_COMMIT_SUBJECT"] = info.Subject
+
 	if env["GITHUB_ACTIONS"] != "" {
-		ciEnv := make(map[string]interface{})
 		extra := []string{
 			"GITHUB_BASE_REF",
 			"GITHUB_HEAD_REF",
@@ -87,10 +99,6 @@ func (c *Collector) Env(env map[string]string) (RunEnv, error) {
 				continue
 			}
 			ciEnv[key] = val
-		}
-
-		if len(tags) > 0 {
-			ciEnv["GIT_TAGS_POINTED_AT"] = strings.Join(tags, ";")
 		}
 
 		re := RunEnv{

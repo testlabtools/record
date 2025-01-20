@@ -240,6 +240,9 @@ func TestUploadAddsGitTags(t *testing.T) {
 			}
 
 			assert.Equal(tt.tags, tags)
+
+			assert.NotEmpty(env["GIT_COMMIT_AUTHOR_EMAIL"])
+			assert.NotEmpty(env["GIT_COMMIT_SUBJECT"])
 		})
 	}
 }
