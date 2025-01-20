@@ -130,7 +130,7 @@ func (u *Uploader) uploadRunFile(ctx context.Context, run *client.CIRunResponse,
 
 // uploadFile uploads the compressed data to the specified URL.
 func uploadFile(ctx context.Context, url string, data io.Reader) error {
-	req, err := http.NewRequestWithContext(ctx, "POST", url, data)
+	req, err := http.NewRequestWithContext(ctx, "PUT", url, data)
 	if err != nil {
 		return fmt.Errorf("failed to create HTTP request: %w", err)
 	}

@@ -144,7 +144,7 @@ func NewServer(t *testing.T, l *slog.Logger, ci client.CIProviderName) *FakeServ
 		json.NewEncoder(w).Encode(info)
 	}
 
-	postS3File := func(w http.ResponseWriter, r *http.Request) {
+	putS3File := func(w http.ResponseWriter, r *http.Request) {
 		body, _ := io.ReadAll(r.Body)
 		fs.Files = append(fs.Files, body)
 		w.WriteHeader(http.StatusOK)
@@ -156,7 +156,7 @@ func NewServer(t *testing.T, l *slog.Logger, ci client.CIProviderName) *FakeServ
 
 	mux.HandleFunc("PATCH /api/v1/runs/{runId}/files/{fileId}", secure(patchFileInfo))
 
-	mux.HandleFunc("POST /s3/files/{fileId}", log(postS3File))
+	mux.HandleFunc("PUT /s3/files/{fileId}", log(putS3File))
 
 	mux.HandleFunc("/", log(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusNotFound)
