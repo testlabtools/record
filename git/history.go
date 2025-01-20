@@ -2,6 +2,7 @@ package git
 
 import (
 	"bufio"
+	"bytes"
 	"fmt"
 	"io"
 	"os/exec"
@@ -70,33 +71,10 @@ func (r Repo) CommitFiles() ([]CommitFile, error) {
 		"--pretty=format:commit %H %cs",
 	)
 
-	stdout, err := cmd.StdoutPipe()
+	stdout, err := cmd.Output()
 	if err != nil {
-		return nil, fmt.Errorf("failed to get stdout pipe: %w", err)
+		return nil, fmt.Errorf("failed to get stdout: %w", err)
 	}
 
-	if err := cmd.Start(); err != nil {
-		return nil, fmt.Errorf("failed to start command: %w", err)
-	}
-
-	// Use a single channel for both results and errors
-	type parseResult struct {
-		parsed []CommitFile
-		err    error
-	}
-	resultChan := make(chan parseResult, 1)
-
-	// Parse the command output concurrently
-	go func() {
-		parsed, err := parseCommitFiles(stdout)
-		resultChan <- parseResult{parsed: parsed, err: err}
-		close(resultChan)
-	}()
-
-	if err := cmd.Wait(); err != nil {
-		return nil, fmt.Errorf("error waiting for command: %w", err)
-	}
-
-	res := <-resultChan
-	return res.parsed, res.err
+	return parseCommitFiles(bytes.NewReader(stdout))
 }
