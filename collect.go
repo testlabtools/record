@@ -60,30 +60,44 @@ type RunEnv struct {
 	CIEnv          *map[string]interface{}
 }
 
+func (c *Collector) collectGitEnv() (map[string]interface{}, error) {
+	env := make(map[string]interface{})
+
+	if !c.repo.Exists() {
+		c.log.Warn("cannot get git env since git repo does not exist", "dir", c.repo.Dir)
+		return env, nil
+	}
+
+	ref := "HEAD"
+	tags, err := c.repo.TagsPointedAt(ref)
+	if err != nil {
+		return env, fmt.Errorf("failed to get tags pointed at ref %q: %w", ref, err)
+	}
+
+	if len(tags) > 0 {
+		env["GIT_TAGS_POINTED_AT"] = strings.Join(tags, ";")
+	}
+
+	info, err := c.repo.CommitInfo(ref)
+	if err != nil {
+		return env, fmt.Errorf("failed to get commit info at ref %q: %w", ref, err)
+	}
+	env["GIT_COMMIT_AUTHOR_EMAIL"] = info.AuthorEmail
+	env["GIT_COMMIT_SUBJECT"] = info.Subject
+
+	return env, nil
+}
+
 func (c *Collector) Env(env map[string]string) (RunEnv, error) {
 	group := env["TESTLAB_GROUP"]
 	if group == "" {
 		return RunEnv{}, fmt.Errorf("env var TESTLAB_GROUP is required")
 	}
 
-	ref := "HEAD"
-	tags, err := c.repo.TagsPointedAt(ref)
+	ciEnv, err := c.collectGitEnv()
 	if err != nil {
-		return RunEnv{}, fmt.Errorf("failed to get tags pointed at ref %q: %w", ref, err)
+		return RunEnv{}, fmt.Errorf("failed to collect git env: %w", err)
 	}
-
-	ciEnv := make(map[string]interface{})
-
-	if len(tags) > 0 {
-		ciEnv["GIT_TAGS_POINTED_AT"] = strings.Join(tags, ";")
-	}
-
-	info, err := c.repo.CommitInfo(ref)
-	if err != nil {
-		return RunEnv{}, fmt.Errorf("failed to get commit info at ref %q: %w", ref, err)
-	}
-	ciEnv["GIT_COMMIT_AUTHOR_EMAIL"] = info.AuthorEmail
-	ciEnv["GIT_COMMIT_SUBJECT"] = info.Subject
 
 	if env["GITHUB_ACTIONS"] != "" {
 		extra := []string{
@@ -245,6 +259,11 @@ type GitSummary struct {
 const GitSummaryFileName = "git.json"
 
 func (c *Collector) addGitSummary(files *map[string][]byte) error {
+	if !c.repo.Exists() {
+		c.log.Warn("cannot get git summary since repo does not exist", "dir", c.repo.Dir)
+		return nil
+	}
+
 	ds, err := c.repo.DiffStat("HEAD")
 	if err != nil {
 		return err

@@ -13,7 +13,7 @@ type CommitInfo struct {
 func (r *Repo) CommitInfo(ref string) (*CommitInfo, error) {
 	cmd := exec.Command(
 		"git",
-		"-C", r.dir,
+		"-C", r.Dir,
 		"log",
 		"-1",
 		"--format=%ae %s",

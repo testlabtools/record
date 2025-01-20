@@ -106,7 +106,7 @@ func (r Repo) DiffStat(ref string) (*DiffStat, error) {
 	// Most git version tags are not merged into the main branch. Use
 	// `git-diff` for those tags to get a full diff of the changes.
 	diff := []string{
-		"-C", r.dir,
+		"-C", r.Dir,
 		"diff",
 		"--merge-base", base,
 		"--numstat",
@@ -118,7 +118,7 @@ func (r Repo) DiffStat(ref string) (*DiffStat, error) {
 	// no diff output because they are part of that branch. Use `git-show` to
 	// get the diff of those (squashed) changes.
 	show := []string{
-		"-C", r.dir,
+		"-C", r.Dir,
 		"show",
 		"--format=commit %H",
 		"--numstat",

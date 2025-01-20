@@ -34,7 +34,6 @@ func TestUploadFromGithub(t *testing.T) {
 			expected: map[string]string{
 				"testdata/basic/reports/e2e-1.xml": "reports/1.xml",
 				"testdata/basic/reports/e2e-2.xml": "reports/2.xml",
-				GitSummaryFileName:                 generated,
 			},
 		},
 		{
@@ -196,6 +195,7 @@ func TestUploadAddsGitTags(t *testing.T) {
 			name: "default",
 			options: UploadOptions{
 				Reports: "testdata/basic/reports",
+				Repo:    "testdata/basic/repo",
 			},
 			tags: nil,
 		},
@@ -241,8 +241,13 @@ func TestUploadAddsGitTags(t *testing.T) {
 
 			assert.Equal(tt.tags, tags)
 
-			assert.NotEmpty(env["GIT_COMMIT_AUTHOR_EMAIL"])
-			assert.NotEmpty(env["GIT_COMMIT_SUBJECT"])
+			if tt.tags == nil {
+				assert.Empty(env["GIT_COMMIT_AUTHOR_EMAIL"])
+				assert.Empty(env["GIT_COMMIT_SUBJECT"])
+			} else {
+				assert.NotEmpty(env["GIT_COMMIT_AUTHOR_EMAIL"])
+				assert.NotEmpty(env["GIT_COMMIT_SUBJECT"])
+			}
 		})
 	}
 }

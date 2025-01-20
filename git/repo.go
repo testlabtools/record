@@ -2,13 +2,14 @@ package git
 
 import (
 	"fmt"
+	"os"
 	"os/exec"
 	"slices"
 	"strings"
 )
 
 type Repo struct {
-	dir string
+	Dir string
 
 	mainBranch string
 
@@ -17,10 +18,21 @@ type Repo struct {
 
 func NewRepo(dir string) *Repo {
 	return &Repo{
-		dir: dir,
+		Dir: dir,
 
 		MaxDays: 60,
 	}
+}
+
+func (r Repo) Exists() bool {
+	info, err := os.Stat(r.Dir)
+	if os.IsNotExist(err) {
+		return false
+	}
+	if err != nil {
+		return false
+	}
+	return info.IsDir()
 }
 
 func (r Repo) MainBranch() (string, error) {
@@ -30,7 +42,7 @@ func (r Repo) MainBranch() (string, error) {
 
 	cmd := exec.Command(
 		"git",
-		"-C", r.dir,
+		"-C", r.Dir,
 		"branch",
 		"-r",
 	)

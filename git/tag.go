@@ -8,7 +8,7 @@ import (
 func (r *Repo) TagsPointedAt(ref string) ([]string, error) {
 	cmd := exec.Command(
 		"git",
-		"-C", r.dir,
+		"-C", r.Dir,
 		"tag",
 		"--points-at", ref,
 	)

@@ -64,7 +64,7 @@ func parseCommitFiles(r io.Reader) ([]CommitFile, error) {
 func (r Repo) CommitFiles() ([]CommitFile, error) {
 	cmd := exec.Command(
 		"git",
-		"-C", r.dir,
+		"-C", r.Dir,
 		"log",
 		fmt.Sprintf("--since=%ddays", r.MaxDays),
 		"--name-only",
