@@ -3,10 +3,13 @@ GO_TEST_FLAGS ?= -test.timeout 2s
 # Disable CGO for all builds.
 export CGO_ENABLED=0
 
-.PHONY: build test cov generate clean
+.PHONY: build build-release test cov generate clean
 
 build: | generate
-	go build ${GOFLAGS} -o dist/main ./cmd
+	go build ${GOFLAGS} -o dist/main ./cli
+
+build-release:
+	goreleaser release --snapshot --clean
 
 test: | generate
 	go test ${GO_TEST_FLAGS} ./...

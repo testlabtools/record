@@ -1,4 +1,4 @@
-package main
+package cmd
 
 import (
 	"log/slog"
@@ -72,7 +72,7 @@ func parseStarted(s string) (t time.Time, err error) {
 }
 
 func init() {
-	rootCmd.AddCommand(uploadCmd)
+	Root.AddCommand(uploadCmd)
 
 	// Here you will define your flags and configuration settings.
 

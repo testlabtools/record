@@ -14,8 +14,12 @@ before:
     - go generate ./...
 
 builds:
-  - env:
+  - main: cli/main.go
+    env:
       - CGO_ENABLED=0
+    goarch:
+      - amd64
+      - arm64
     goos:
       - linux
       - darwin
@@ -29,6 +33,9 @@ archives:
       {{- else if eq .Arch "386" }}i386
       {{- else }}{{ .Arch }}{{ end }}
       {{- if .Arm }}v{{ .Arm }}{{ end }}
+    excludes:
+      - "README.md"
+      - "LICENSE"
     # use zip for windows archives
     format_overrides:
       - goos: windows
