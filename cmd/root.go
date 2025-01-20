@@ -16,6 +16,12 @@ var (
 	date    = "unknown"
 )
 
+func SetBuildVersion(v string, c string, d string) {
+	version = v
+	commit = c
+	date = d
+}
+
 // Root represents the base command when called without any subcommands
 var Root = &cobra.Command{
 	Use:   "record",
