@@ -18,7 +18,9 @@ function set_user() {
 }
 
 function add() {
-    local msg="$1"
+    local repo="$1"
+    local msg="$2"
+    shift
     shift
 
     git -C "$repo" add $@
@@ -35,13 +37,17 @@ e2e/ @org/team2
 EOF
 
 # Add codeowners
-add "add owners" .github/CODEOWNERS
+add "$repo" "add owners" .github/CODEOWNERS
+git -C "$repo" tag 1.0.2
 
 # Clone repo to have a remote.
 git clone --template=/dev/null "$repo" "$feature"
-git -C "$feature" checkout -b my-feature
 
 # Set main as default remote origin branch.
 git -C "$repo" remote add origin "$(realpath $feature)"
 git -C "$repo" fetch origin
 git -C "$repo" branch -u origin/main
+
+# Create feature branch and tag.
+git -C "$feature" checkout -b my-feature
+git -C "$feature" tag 2.my-feature.3
