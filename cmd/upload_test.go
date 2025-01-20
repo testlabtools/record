@@ -29,6 +29,11 @@ func TestParseStarted(t *testing.T) {
 			out:  time.Date(2016, 7, 25, 2, 22, 33, 0, time.UTC),
 		},
 		{
+			name: "iso8601-git",
+			val:  "2016-07-25T02:22:33+00:00",
+			out:  time.Date(2016, 7, 25, 2, 22, 33, 0, time.UTC),
+		},
+		{
 			name: "rfc3339",
 			val:  "2016-07-25T02:22:33Z",
 			out:  time.Date(2016, 7, 25, 2, 22, 33, 0, time.UTC),
