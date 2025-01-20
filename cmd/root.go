@@ -39,7 +39,7 @@ func setLogLevel(level slog.Level) {
 	l := slog.New(
 		Fanout(
 			tint.NewHandler(os.Stderr, &tint.Options{
-				Level:      slog.LevelInfo,
+				Level:      level,
 				TimeFormat: time.Kitchen,
 			}),
 			sentryslog.Option{
