@@ -33,15 +33,14 @@ archives:
       {{- else if eq .Arch "386" }}i386
       {{- else }}{{ .Arch }}{{ end }}
       {{- if .Arm }}v{{ .Arm }}{{ end }}
-    excludes:
-      - "README.md"
-      - "LICENSE"
     # use zip for windows archives
     format_overrides:
       - goos: windows
         format: zip
 
 changelog:
+  # Disable changelog for now.
+  disable: true
   sort: asc
   filters:
     exclude:
