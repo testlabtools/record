@@ -40,15 +40,22 @@ type UploadOptions struct {
 
 type Uploader struct {
 	api client.ClientWithResponses
-	Log *slog.Logger
+	log *slog.Logger
 }
 
-func NewUploader(server, apiKey string) (*Uploader, error) {
+func NewUploader(l *slog.Logger, server, apiKey string) (*Uploader, error) {
 	cl, err := client.NewClient(server)
 	if err != nil {
 		return nil, err
 	}
-	cl.Client = http.DefaultClient
+
+	hc := http.DefaultClient
+	hc.Transport = &retryTransport{
+		maxRetries: 5,
+		log:        l,
+	}
+
+	cl.Client = hc
 
 	cl.RequestEditors = append(cl.RequestEditors, func(ctx context.Context, r *http.Request) error {
 		r.Header.Add(HeaderAPIKey, apiKey)
@@ -59,6 +66,7 @@ func NewUploader(server, apiKey string) (*Uploader, error) {
 
 	return &Uploader{
 		api: api,
+		log: l,
 	}, nil
 }
 
@@ -103,14 +111,14 @@ func (u *Uploader) uploadRunFile(ctx context.Context, run *client.CIRunResponse,
 		return fmt.Errorf("create run returned invalid status code: %d", code)
 	}
 
-	u.Log.Debug("got run file upload", "fileId", fileId, "url", url)
+	u.log.Debug("got run file upload", "fileId", fileId, "url", url)
 
 	// Upload data to pre-signed url.
 	if err := uploadFile(ctx, url, data); err != nil {
 		return fmt.Errorf("failed to upload file: %w", err)
 	}
 
-	u.Log.Info("upload successful", "fileId", fileId)
+	u.log.Info("upload successful", "fileId", fileId)
 
 	// Mark file upload as completed
 	resp, err := u.api.UpdateRunFileInfoWithResponse(ctx, runId, fileId, client.UpdateRunFileInfoJSONRequestBody{
@@ -181,13 +189,10 @@ func Upload(l *slog.Logger, osEnv map[string]string, o UploadOptions) error {
 
 	l.Debug("collected env vars", "env", env)
 
-	// TODO retry with exponential backoff + jitter.
-
-	up, err := NewUploader(server, apiKey)
+	up, err := NewUploader(l, server, apiKey)
 	if err != nil {
 		return err
 	}
-	up.Log = l
 
 	run, created, err := up.createRun(ctx, client.CreateRunJSONRequestBody{
 		ActorName:      env.ActorName,
