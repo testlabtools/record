@@ -14,6 +14,11 @@ build-release:
 test: | generate
 	go test ${GO_TEST_FLAGS} ./...
 
+test-junit: | generate
+	rm -rf reports
+	mkdir -p reports
+	go test ${GO_TEST_FLAGS} -v ./... 2>&1 | go-junit-report -set-exit-code > reports/junit.xml
+
 cov: GO_TEST_FLAGS+=-coverprofile=coverage.out
 cov: test
 	go tool cover -html=coverage.out

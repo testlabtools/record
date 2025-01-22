@@ -35,8 +35,8 @@ jobs:
       - name: Build
         run: make build
 
-      - name: Test
-        run: make test
+      - name: Test (JUnit)
+        run: make test-junit
 
       - name: Test GoReleaser
         uses: goreleaser/goreleaser-action@v6
