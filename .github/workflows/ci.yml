@@ -38,6 +38,17 @@ jobs:
       - name: Test (JUnit)
         run: make test-junit
 
+      - name: Link binary
+        run: ln -s ./dist/main ./record
+
+      - name: Test action
+        uses: ./
+        with:
+          junit-paths: reports/
+        env:
+          TESTLAB_GROUP: unit
+          TESTLAB_KEY: ${{ secrets.TESTLAB_KEY }}
+
       - name: Test GoReleaser
         uses: goreleaser/goreleaser-action@v6
         if: startsWith(github.ref, 'refs/tags/') == false
