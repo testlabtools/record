@@ -45,6 +45,7 @@ jobs:
         uses: ./
         with:
           junit-paths: reports/
+          continue-on-error: false
         env:
           TESTLAB_GROUP: unit
           TESTLAB_KEY: ${{ secrets.TESTLAB_KEY }}

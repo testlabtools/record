@@ -8,6 +8,9 @@ inputs:
   repo-root:
     description: Root directory of the repository.
     required: false
+  continue-on-error:
+    description: Continue with CI workflow on error.
+    required: false
 
 runs:
   using: composite
@@ -15,7 +18,7 @@ runs:
     - name: Upload results
       run: ${GITHUB_ACTION_PATH}/script.sh
       shell: bash
-      continue-on-error: true
+      continue-on-error: ${{ inputs.continue-on-error || true }}
       env:
         JUNIT_PATHS: ${{ inputs.junit-paths }}
         REPO_ROOT: ${{ inputs.repo-root || github.workspace }}
