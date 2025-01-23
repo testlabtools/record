@@ -25,7 +25,7 @@ builds:
       - darwin
 
 archives:
-  - format: tar.gz
+  - formats: [tar.gz]
     name_template: >-
       {{ .ProjectName }}_
       {{- title .Os }}_
@@ -36,7 +36,11 @@ archives:
     # use zip for windows archives
     format_overrides:
       - goos: windows
-        format: zip
+        formats: [zip]
+
+    files:
+      # override default to omit LICENSE and README.md files in archive.
+      - none*
 
 changelog:
   # Disable changelog for now.
