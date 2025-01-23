@@ -10,7 +10,9 @@ inputs:
     required: false
   continue-on-error:
     description: Continue with CI workflow on error.
+    type: boolean
     required: false
+    default: true
 
 runs:
   using: composite
@@ -18,7 +20,7 @@ runs:
     - name: Upload results
       run: ${GITHUB_ACTION_PATH}/script.sh
       shell: bash
-      continue-on-error: ${{ inputs.continue-on-error || true }}
+      continue-on-error: ${{ fromJSON(inputs.continue-on-error) }}
       env:
         JUNIT_PATHS: ${{ inputs.junit-paths }}
         REPO_ROOT: ${{ inputs.repo-root || github.workspace }}
