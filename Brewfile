@@ -1,3 +1,4 @@
+brew "actionlint"
 brew "golang"
 brew "goreleaser"
 brew "shellcheck"
