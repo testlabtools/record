@@ -161,7 +161,7 @@ func uploadFile(ctx context.Context, url string, data io.Reader) error {
 }
 
 func Upload(l *slog.Logger, osEnv map[string]string, o UploadOptions) error {
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
 	defer cancel()
 
 	server := osEnv["TESTLAB_HOST"]
