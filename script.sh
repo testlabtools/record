@@ -33,7 +33,7 @@ platform="$(uname -m)"
 set -x
 
 if [[ ! (-f "./${pkg_name}") ]]; then
-	curl --fail --location --retry 3 "https://github.com/testlabtools/${pkg_name}/releases/download/${pkg_version}/${pkg_name}-${os}-${platform}.tar.gz" -o "./${pkg_name}.tar.gz"
+	curl --fail --location --retry 3 "https://github.com/testlabtools/${pkg_name}/releases/${pkg_version}/download/${pkg_name}-${os}-${platform}.tar.gz" -o "./${pkg_name}.tar.gz"
 	tar -xvf "${pkg_name}.tar.gz"
 fi
 chmod +x "${pkg_name}"
