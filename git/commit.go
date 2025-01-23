@@ -1,6 +1,8 @@
 package git
 
 import (
+	"bytes"
+	"fmt"
 	"os/exec"
 	"strings"
 )
@@ -11,17 +13,21 @@ type CommitInfo struct {
 }
 
 func (r *Repo) CommitInfo(ref string) (*CommitInfo, error) {
-	cmd := exec.Command(
-		"git",
+	args := []string{
 		"-C", r.Dir,
 		"log",
 		"-1",
 		"--format=%ae%x09%s",
 		ref,
-	)
+	}
+	cmd := exec.Command("git", args...)
+
+	var stderr bytes.Buffer
+	cmd.Stderr = &stderr
+
 	out, err := cmd.Output()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to get commit info for args %q: stderr=%q err=%w", args, stderr.String(), err)
 	}
 	line := strings.TrimSpace(string(out))
 	if line == "" {

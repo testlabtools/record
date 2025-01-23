@@ -1,6 +1,7 @@
 package git
 
 import (
+	"bytes"
 	"fmt"
 	"os"
 	"os/exec"
@@ -40,17 +41,21 @@ func (r Repo) MainBranch() (string, error) {
 		return r.mainBranch, nil
 	}
 
-	cmd := exec.Command(
-		"git",
+	args := []string{
 		"-C", r.Dir,
 		"branch",
 		"-r",
-	)
+	}
+
+	cmd := exec.Command("git", args...)
+
+	var stderr bytes.Buffer
+	cmd.Stderr = &stderr
 
 	out, err := cmd.Output()
 
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("failed to get main branch with args %q: stderr=%q err=%w", args, stderr.String(), err)
 	}
 
 	branch := ""
@@ -68,7 +73,7 @@ func (r Repo) MainBranch() (string, error) {
 	}
 
 	if branch == "" {
-		return "", fmt.Errorf("cannot find main branch in git remote output")
+		return "", fmt.Errorf("cannot find main branch in git remote output: %q", string(out))
 	}
 
 	r.mainBranch = branch

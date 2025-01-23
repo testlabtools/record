@@ -129,14 +129,17 @@ func (r Repo) DiffStat(ref string) (*DiffStat, error) {
 	for _, args := range [][]string{diff, show} {
 		cmd := exec.Command("git", args...)
 
+		var stderr bytes.Buffer
+		cmd.Stderr = &stderr
+
 		out, err := cmd.Output()
 		if err != nil {
-			return nil, fmt.Errorf("failed to get diff stat for ref %q: %w", ref, err)
+			return nil, fmt.Errorf("failed to get diff stat output for args %q: stderr=%q err=%w", args, stderr.String(), err)
 		}
 
 		stat, err := parseDiffStat(bytes.NewReader(out))
 		if err != nil {
-			return nil, fmt.Errorf("failed to get diff stat for ref %q: %w", ref, err)
+			return nil, fmt.Errorf("failed to parse diff stat for args=%q: %w", args, err)
 		}
 
 		if stat.Hash == "" && stat.Files == 0 {
