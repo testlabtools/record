@@ -98,7 +98,12 @@ func parseChangeNumber(s string) (int, error) {
 }
 
 func (r Repo) DiffStat(ref string) (*DiffStat, error) {
-	base, err := r.MainBranch()
+	main, err := r.MainBranch()
+	if err != nil {
+		return nil, fmt.Errorf("cannot find main branch: %w", err)
+	}
+
+	base, err := r.MergeBase(ref, main)
 	if err != nil {
 		return nil, fmt.Errorf("cannot find merge-base branch: %w", err)
 	}
@@ -108,7 +113,7 @@ func (r Repo) DiffStat(ref string) (*DiffStat, error) {
 	diff := []string{
 		"-C", r.Dir,
 		"diff",
-		"--merge-base", base,
+		base,
 		"--numstat",
 		"--shortstat",
 		ref,

@@ -80,3 +80,24 @@ func (r Repo) MainBranch() (string, error) {
 
 	return branch, nil
 }
+
+func (r Repo) MergeBase(ref, main string) (string, error) {
+	args := []string{
+		"-C", r.Dir,
+		"merge-base",
+		ref,
+		main,
+	}
+
+	cmd := exec.Command("git", args...)
+
+	var stderr bytes.Buffer
+	cmd.Stderr = &stderr
+
+	out, err := cmd.Output()
+	if err != nil {
+		return "", fmt.Errorf("failed to get merge base with args %q: stderr=%q err=%w", args, stderr.String(), err)
+	}
+
+	return strings.TrimSpace(string(out)), nil
+}
