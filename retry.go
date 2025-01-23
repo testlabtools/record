@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log/slog"
 	"math/rand/v2"
+	"net"
 	"net/http"
 	"sync"
 	"time"
@@ -39,7 +40,20 @@ func (t *retryTransport) randInt64(backoff int64) int64 {
 func (t *retryTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 	sync.OnceFunc(func() {
 		if t.base == nil {
-			t.base = http.DefaultTransport
+			t.base = &http.Transport{
+				// Use most values from `net/http/transport.go`, but with a
+				// shorter dialer timeout (from 30 to 10 sec).
+				Proxy: http.ProxyFromEnvironment,
+				DialContext: (&net.Dialer{
+					Timeout:   10 * time.Second,
+					KeepAlive: 30 * time.Second,
+				}).DialContext,
+				ForceAttemptHTTP2:     true,
+				MaxIdleConns:          100,
+				IdleConnTimeout:       90 * time.Second,
+				TLSHandshakeTimeout:   10 * time.Second,
+				ExpectContinueTimeout: 1 * time.Second,
+			}
 		}
 
 		if t.sleep == nil {

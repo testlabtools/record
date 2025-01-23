@@ -50,6 +50,7 @@ func NewUploader(l *slog.Logger, server, apiKey string) (*Uploader, error) {
 	}
 
 	hc := http.DefaultClient
+	hc.Timeout = 10 * time.Second
 	hc.Transport = &retryTransport{
 		maxRetries: 5,
 		log:        l,
