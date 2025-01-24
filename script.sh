@@ -30,6 +30,8 @@ fi
 os="$(uname -s)"
 platform="$(uname -m)"
 
+echo "::group::Prepare record"
+
 set -x
 
 if [[ ! (-f "./${pkg_name}") ]]; then
@@ -37,5 +39,9 @@ if [[ ! (-f "./${pkg_name}") ]]; then
 	tar -xvf "${pkg_name}.tar.gz"
 fi
 chmod +x "${pkg_name}"
+
+set +x
+
+echo "::endgroup::"
 
 ./record upload --repo "$repo" --reports "$reports"

@@ -35,7 +35,12 @@ var uploadCmd = &cobra.Command{
 
 		l := slog.Default()
 
-		l.Info("start upload command", "version", version, "commit", commit, "built", date)
+		l.Info("start upload command",
+			"args", args,
+			"version", version,
+			"commit", commit,
+			"built", date,
+		)
 
 		o := record.UploadOptions{
 			Repo:    cmd.Flag("repo").Value.String(),
