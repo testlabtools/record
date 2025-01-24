@@ -1,10 +1,12 @@
 package cmd
 
 import (
+	"fmt"
 	"log/slog"
 	"time"
 
 	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 	"github.com/testlabtools/record"
 )
 
@@ -35,8 +37,14 @@ var uploadCmd = &cobra.Command{
 
 		l := slog.Default()
 
+		var flags []string
+		cmd.Flags().VisitAll(func(flag *pflag.Flag) {
+			flags = append(flags, fmt.Sprintf("%s=%s", flag.Name, flag.Value))
+		})
+
 		l.Info("start upload command",
 			"args", args,
+			"flags", flags,
 			"version", version,
 			"commit", commit,
 			"built", date,
