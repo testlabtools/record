@@ -22,16 +22,30 @@ type Collector struct {
 	log     *slog.Logger
 	options UploadOptions
 	repo    *git.Repo
+
+	env   RunEnv
+	osEnv map[string]string
 }
 
-func NewCollector(l *slog.Logger, o UploadOptions) *Collector {
+func NewCollector(l *slog.Logger, o UploadOptions, osEnv map[string]string) (*Collector, error) {
 	r := git.NewRepo(o.Repo)
 
-	return &Collector{
+	if o.MaxReports == 0 {
+		o.MaxReports = DefaulMaxReports
+	}
+
+	c := &Collector{
 		log:     l,
 		options: o,
 		repo:    r,
+
+		osEnv: osEnv,
 	}
+
+	env, err := c.initEnv()
+	c.env = env
+
+	return c, err
 }
 
 func parseInts(env map[string]string, numeric map[string]*int) error {
@@ -88,8 +102,8 @@ func (c *Collector) collectGitEnv() (map[string]interface{}, error) {
 	return env, nil
 }
 
-func (c *Collector) Env(env map[string]string) (RunEnv, error) {
-	group := env["TESTLAB_GROUP"]
+func (c *Collector) initEnv() (RunEnv, error) {
+	group := c.osEnv["TESTLAB_GROUP"]
 	if group == "" {
 		return RunEnv{}, fmt.Errorf("env var TESTLAB_GROUP is required")
 	}
@@ -99,7 +113,7 @@ func (c *Collector) Env(env map[string]string) (RunEnv, error) {
 		return RunEnv{}, fmt.Errorf("failed to collect git env: %w", err)
 	}
 
-	if env["GITHUB_ACTIONS"] != "" {
+	if c.osEnv["GITHUB_ACTIONS"] != "" {
 		extra := []string{
 			"GITHUB_BASE_REF",
 			"GITHUB_HEAD_REF",
@@ -108,7 +122,7 @@ func (c *Collector) Env(env map[string]string) (RunEnv, error) {
 		}
 
 		for _, key := range extra {
-			val := env[key]
+			val := c.osEnv[key]
 			if val == "" {
 				continue
 			}
@@ -116,12 +130,12 @@ func (c *Collector) Env(env map[string]string) (RunEnv, error) {
 		}
 
 		re := RunEnv{
-			ActorName:      env["GITHUB_ACTOR"],
+			ActorName:      c.osEnv["GITHUB_ACTOR"],
 			CIProviderName: client.Github,
-			GitRef:         env["GITHUB_REF"],
-			GitRefName:     env["GITHUB_REF_NAME"],
-			GitRepo:        env["GITHUB_REPOSITORY"],
-			GitSha:         env["GITHUB_SHA"],
+			GitRef:         c.osEnv["GITHUB_REF"],
+			GitRefName:     c.osEnv["GITHUB_REF_NAME"],
+			GitRepo:        c.osEnv["GITHUB_REPOSITORY"],
+			GitSha:         c.osEnv["GITHUB_SHA"],
 			Group:          group,
 			CIEnv:          &ciEnv,
 		}
@@ -132,12 +146,16 @@ func (c *Collector) Env(env map[string]string) (RunEnv, error) {
 			"GITHUB_RUN_NUMBER":  &re.RunNumber,
 		}
 
-		err := parseInts(env, numeric)
+		err := parseInts(c.osEnv, numeric)
 
 		return re, err
 	}
 
 	return RunEnv{}, fmt.Errorf("unknown CI provider")
+}
+
+func (c *Collector) Env() RunEnv {
+	return c.env
 }
 
 func dirExists(path string) bool {
@@ -269,14 +287,25 @@ func (c *Collector) addGitSummary(files *map[string][]byte) error {
 		return err
 	}
 
-	cf, err := c.repo.CommitFiles()
+	main, err := c.repo.MainBranch()
 	if err != nil {
 		return err
 	}
 
 	summary := GitSummary{
-		DiffStat:    ds,
-		CommitFiles: cf,
+		DiffStat: ds,
+	}
+
+	c.log.Debug("compare git ref name with main branch",
+		"refName", c.env.GitRefName,
+		"main", main,
+	)
+	if c.env.GitRefName == main {
+		cf, err := c.repo.CommitFiles()
+		if err != nil {
+			return err
+		}
+		summary.CommitFiles = cf
 	}
 
 	var buf bytes.Buffer

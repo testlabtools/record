@@ -68,7 +68,7 @@ func (r Repo) MainBranch() (string, error) {
 	for _, line := range strings.Split(string(out), "\n") {
 		line = strings.TrimSpace(line)
 		if slices.Contains(branches, line) {
-			branch = line
+			branch = strings.TrimPrefix(line, "origin/")
 		}
 	}
 

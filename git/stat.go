@@ -103,7 +103,7 @@ func (r Repo) DiffStat(ref string) (*DiffStat, error) {
 		return nil, fmt.Errorf("cannot find main branch: %w", err)
 	}
 
-	base, err := r.MergeBase(ref, main)
+	base, err := r.MergeBase(ref, "origin/"+main)
 	if err != nil {
 		return nil, fmt.Errorf("cannot find merge-base branch: %w", err)
 	}

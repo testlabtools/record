@@ -175,19 +175,14 @@ func Upload(l *slog.Logger, osEnv map[string]string, o UploadOptions) error {
 		return fmt.Errorf("env var TESTLAB_KEY is required")
 	}
 
-	if o.MaxReports == 0 {
-		o.MaxReports = DefaulMaxReports
-	}
-
 	l.Info("upload run", "server", server, "apiKey", mask(apiKey))
 
-	collector := NewCollector(l, o)
-
-	env, err := collector.Env(osEnv)
+	collector, err := NewCollector(l, o, osEnv)
 	if err != nil {
 		return err
 	}
 
+	env := collector.Env()
 	l.Debug("collected env vars", "env", env)
 
 	up, err := NewUploader(l, server, apiKey)

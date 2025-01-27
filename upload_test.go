@@ -302,7 +302,9 @@ func TestUploadGitSummary(t *testing.T) {
 			err = json.NewDecoder(bytes.NewReader(file)).Decode(&summary)
 			assert.NoError(err)
 
-			assert.NotEmpty(summary.CommitFiles)
+			// No commit files for feature branches.
+			assert.Empty(summary.CommitFiles)
+
 			assert.NotEmpty(summary.DiffStat.Hash)
 			assert.NotEmpty(summary.DiffStat.Files)
 		})
