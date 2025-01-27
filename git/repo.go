@@ -21,7 +21,7 @@ func NewRepo(dir string) *Repo {
 	return &Repo{
 		Dir: dir,
 
-		MaxDays: 60,
+		MaxDays: 5,
 	}
 }
 
