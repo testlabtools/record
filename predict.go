@@ -33,7 +33,8 @@ func Predict(l *slog.Logger, env map[string]string, o PredictOptions) error {
 		tests = append(tests, line)
 	}
 
-	fmt.Fprint(o.Stdout, strings.Join(tests, "|"))
+	out := strings.Join(tests, "|")
+	fmt.Fprintf(o.Stdout, "^(%s)$", out)
 
 	return scanner.Err()
 }

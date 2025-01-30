@@ -23,14 +23,19 @@ func TestPredictCommand(t *testing.T) {
 		check  func(t *testing.T, srv *fake.FakeServer)
 	}{
 		{
-			name: "default",
+			name: "feature-empty-go-test",
+			args: []string{
+				"--repo", "../testdata/feature/repo",
+				"--runner", "go-test",
+			},
+			stdout: "^()$",
 			check: func(t *testing.T, srv *fake.FakeServer) {
 				// TODO
 				assert.Empty(t, srv.Files)
 			},
 		},
 		{
-			name: "github",
+			name: "github-two-go-test",
 			args: []string{
 				"--repo", "../testdata/github/repo",
 				"--runner", "go-test",
@@ -39,7 +44,7 @@ func TestPredictCommand(t *testing.T) {
 TestPredictCommand
 TestUploadCommand
 `,
-			stdout: "TestPredictCommand|TestUploadCommand",
+			stdout: "^(TestPredictCommand|TestUploadCommand)$",
 			check: func(t *testing.T, srv *fake.FakeServer) {
 				// TODO
 				assert.Empty(t, srv.Files)
