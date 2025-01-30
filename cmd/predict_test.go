@@ -29,6 +29,7 @@ func TestPredictCommand(t *testing.T) {
 			name: "github",
 			args: []string{
 				"--repo", "../testdata/github/repo",
+				"--runner", "go-test",
 			},
 			check: func(t *testing.T, srv *fake.FakeServer) {
 				// TODO

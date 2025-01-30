@@ -15,7 +15,7 @@ var predictCmd = &cobra.Command{
 		o := record.PredictOptions{
 			Repo: cmd.Flag("repo").Value.String(),
 
-			PredictedTestsFile: cmd.Flag("predicted-tests-file").Value.String(),
+			Runner: cmd.Flag("runner").Value.String(),
 
 			Debug: setup.debug,
 		}
@@ -36,5 +36,5 @@ func init() {
 	// Cobra supports local flags which will only run when this command
 	// is called directly, e.g.:
 	// predictCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
-	predictCmd.Flags().String("predicted-tests-file", "/tmp/predicted-tests.json", "path to the predicted tests output file")
+	predictCmd.Flags().String("runner", "", "name of the test runner format")
 }

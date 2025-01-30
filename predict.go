@@ -5,7 +5,7 @@ import "log/slog"
 type PredictOptions struct {
 	Repo string
 
-	PredictedTestsFile string
+	Runner string
 
 	Debug bool
 }
