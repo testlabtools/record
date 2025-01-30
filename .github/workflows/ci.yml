@@ -64,7 +64,9 @@ jobs:
           TESTLAB_KEY: ${{ secrets.TESTLAB_KEY }}
 
       - name: Test predicted
-        run: go test -run "$(cat /tmp/testlab-predicted.txt)"
+        run: |
+          cat /tmp/testlab-predicted.txt
+          go test -run "$(cat /tmp/testlab-predicted.txt)"
 
       - name: Test GoReleaser
         uses: goreleaser/goreleaser-action@v6

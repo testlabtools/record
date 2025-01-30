@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"io"
 	"os"
 
 	"github.com/spf13/cobra"
@@ -12,6 +13,8 @@ var predictCmd = &cobra.Command{
 	Use:   "predict",
 	Short: "Predict CI and test results using TestLab",
 	RunE: func(cmd *cobra.Command, args []string) error {
+		ctx := cmd.Context()
+
 		setup := setupCommand(cmd, args)
 
 		o := record.PredictOptions{
@@ -23,6 +26,13 @@ var predictCmd = &cobra.Command{
 
 			Stdin:  os.Stdin,
 			Stdout: os.Stdout,
+		}
+
+		if in := ctx.Value("stdin"); in != nil {
+			o.Stdin = in.(io.Reader)
+		}
+		if out := ctx.Value("stdout"); out != nil {
+			o.Stdout = out.(io.Writer)
 		}
 
 		return record.Predict(setup.log, setup.env, o)
