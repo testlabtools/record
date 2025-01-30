@@ -2,7 +2,7 @@
 set -euo pipefail
 
 pkg_name="record"
-pkg_version="latest"
+pkg_version="${RECORD_VERSION:-latest}"
 
 repo="${REPO_ROOT:-.}"
 reports="${JUNIT_PATHS:-reports/}"
@@ -30,12 +30,18 @@ fi
 os="$(uname -s)"
 platform="$(uname -m)"
 
+if [[ "$pkg_version" == "latest" ]]; then
+	url="https://github.com/testlabtools/${pkg_name}/releases/${pkg_version}/download/${pkg_name}_${os}_${platform}.tar.gz"
+else
+	url="https://github.com/testlabtools/${pkg_name}/releases/download/${pkg_version}/${pkg_name}_${os}_${platform}.tar.gz"
+fi
+
 echo "::group::Prepare record"
 
 set -x
 
 if [[ ! (-f "./${pkg_name}") ]]; then
-	curl --fail --location --retry 3 "https://github.com/testlabtools/${pkg_name}/releases/${pkg_version}/download/${pkg_name}_${os}_${platform}.tar.gz" -o "./${pkg_name}.tar.gz"
+	curl --fail --location --retry 3 "$url" -o "./${pkg_name}.tar.gz"
 	tar -xvf "${pkg_name}.tar.gz"
 fi
 chmod +x "${pkg_name}"
