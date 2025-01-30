@@ -22,14 +22,18 @@ type PredictOptions struct {
 func Predict(l *slog.Logger, env map[string]string, o PredictOptions) error {
 	// Copy stdin to stdout for now.
 	scanner := bufio.NewScanner(o.Stdin)
+
+	var tests []string
 	for scanner.Scan() {
 		line := scanner.Text()
 		// Omit any lines with spaces (containing go build output).
 		if strings.Contains(line, " ") {
 			continue
 		}
-		fmt.Fprintln(o.Stdout, line)
+		tests = append(tests, line)
 	}
+
+	fmt.Fprint(o.Stdout, strings.Join(tests, "|"))
 
 	return scanner.Err()
 }

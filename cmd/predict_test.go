@@ -37,8 +37,9 @@ func TestPredictCommand(t *testing.T) {
 			},
 			stdin: `ok  	github.com/testlabtools/record
 TestPredictCommand
+TestUploadCommand
 `,
-			stdout: "TestPredictCommand\n",
+			stdout: "TestPredictCommand|TestUploadCommand",
 			check: func(t *testing.T, srv *fake.FakeServer) {
 				// TODO
 				assert.Empty(t, srv.Files)
