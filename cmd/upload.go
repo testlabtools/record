@@ -13,7 +13,7 @@ import (
 // uploadCmd represents the upload command
 var uploadCmd = &cobra.Command{
 	Use:   "upload",
-	Short: "Upload CI and test run results to Test Lab",
+	Short: "Upload CI and test run results to TestLab",
 	// Long: `A longer description that spans multiple lines and likely contains examples
 	// and usage of using your command. For example:
 	//

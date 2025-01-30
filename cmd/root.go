@@ -25,7 +25,7 @@ func SetBuildVersion(v string, c string, d string) {
 // Root represents the base command when called without any subcommands
 var Root = &cobra.Command{
 	Use:   "record",
-	Short: "Manage CI and test runs in Test Lab",
+	Short: "Manage CI and test runs in TestLab",
 	// Long: `A longer description that spans multiple lines and likely contains
 	// examples and usage of using your application. For example:
 	//
