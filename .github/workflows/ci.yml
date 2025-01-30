@@ -63,6 +63,9 @@ jobs:
           TESTLAB_GROUP: unit
           TESTLAB_KEY: ${{ secrets.TESTLAB_KEY }}
 
+      - name: Test predicted
+        run: go test -run "$(cat /tmp/testlab-predicted.txt)"
+
       - name: Test GoReleaser
         uses: goreleaser/goreleaser-action@v6
         if: startsWith(github.ref, 'refs/tags/') == false

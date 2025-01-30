@@ -1,6 +1,8 @@
 package cmd
 
 import (
+	"os"
+
 	"github.com/spf13/cobra"
 	"github.com/testlabtools/record"
 )
@@ -18,6 +20,9 @@ var predictCmd = &cobra.Command{
 			Runner: cmd.Flag("runner").Value.String(),
 
 			Debug: setup.debug,
+
+			Stdin:  os.Stdin,
+			Stdout: os.Stdout,
 		}
 
 		return record.Predict(setup.log, setup.env, o)

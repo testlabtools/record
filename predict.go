@@ -1,9 +1,11 @@
 package record
 
 import (
+	"bufio"
+	"fmt"
 	"io"
 	"log/slog"
-	"os"
+	"strings"
 )
 
 type PredictOptions struct {
@@ -12,10 +14,22 @@ type PredictOptions struct {
 	Runner string
 
 	Debug bool
+
+	Stdin  io.Reader
+	Stdout io.Writer
 }
 
 func Predict(l *slog.Logger, env map[string]string, o PredictOptions) error {
 	// Copy stdin to stdout for now.
-	_, err := io.Copy(os.Stdout, os.Stdin)
-	return err
+	scanner := bufio.NewScanner(o.Stdin)
+	for scanner.Scan() {
+		line := scanner.Text()
+		// Omit any lines with spaces (containing go build output).
+		if strings.Contains(line, " ") {
+			continue
+		}
+		fmt.Fprintln(o.Stdout, line)
+	}
+
+	return scanner.Err()
 }
