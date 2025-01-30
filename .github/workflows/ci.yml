@@ -50,6 +50,9 @@ jobs:
           TESTLAB_GROUP: unit
           TESTLAB_KEY: ${{ secrets.TESTLAB_KEY }}
 
+      - name: Link binary
+        run: ln -s ./dist/main ./record
+
       - name: Test action (predict)
         uses: testlabtools/predict@main
         with:
