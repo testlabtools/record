@@ -1,12 +1,9 @@
 package cmd
 
 import (
-	"fmt"
-	"log/slog"
 	"time"
 
 	"github.com/spf13/cobra"
-	"github.com/spf13/pflag"
 	"github.com/testlabtools/record"
 )
 
@@ -21,39 +18,12 @@ var uploadCmd = &cobra.Command{
 	// This application is a tool to generate the needed files
 	// to quickly create a Cobra application.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		env := getEnv()
-		if val := cmd.Context().Value("env"); val != nil {
-			env = val.(map[string]string)
-		}
-
-		debug := cmd.Flag("debug").Value.String() == "true"
-		if !debug {
-			debug = env["TESTLAB_DEBUG"] != ""
-		}
-
-		if debug {
-			setLogLevel(slog.LevelDebug)
-		}
-
-		l := slog.Default()
-
-		var flags []string
-		cmd.Flags().VisitAll(func(flag *pflag.Flag) {
-			flags = append(flags, fmt.Sprintf("%s=%s", flag.Name, flag.Value))
-		})
-
-		l.Info("start upload command",
-			"args", args,
-			"flags", flags,
-			"version", version,
-			"commit", commit,
-			"built", date,
-		)
+		setup := setupCommand(cmd, args)
 
 		o := record.UploadOptions{
 			Repo:    cmd.Flag("repo").Value.String(),
 			Reports: cmd.Flag("reports").Value.String(),
-			Debug:   debug,
+			Debug:   setup.debug,
 		}
 
 		started := cmd.Flag("started").Value.String()
@@ -65,7 +35,7 @@ var uploadCmd = &cobra.Command{
 			o.Started = &val
 		}
 
-		return record.Upload(l, env, o)
+		return record.Upload(setup.log, setup.env, o)
 	},
 }
 
@@ -98,6 +68,4 @@ func init() {
 	uploadCmd.Flags().String("started", "", "set run's start time (ISO 8601 format)")
 
 	uploadCmd.Flags().String("reports", "junit-reports", "path to the JUnit reports directory")
-
-	uploadCmd.Flags().Bool("debug", false, "enable verbose debug logs")
 }

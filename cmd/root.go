@@ -66,6 +66,8 @@ func init() {
 
 	Root.PersistentFlags().String("repo", "", "path to git repo")
 
+	Root.PersistentFlags().Bool("debug", false, "enable verbose debug logs")
+
 	// Cobra also supports local flags, which will only run
 	// when this action is called directly.
 	// rootCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")

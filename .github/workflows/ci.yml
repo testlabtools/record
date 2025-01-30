@@ -41,10 +41,18 @@ jobs:
       - name: Link binary
         run: ln -s ./dist/main ./record
 
-      - name: Test action
+      - name: Test action (record)
         uses: ./
         with:
           junit-paths: reports/
+          continue-on-error: false
+        env:
+          TESTLAB_GROUP: unit
+          TESTLAB_KEY: ${{ secrets.TESTLAB_KEY }}
+
+      - name: Test action (predict)
+        uses: testlabtools/predict@main
+        with:
           continue-on-error: false
         env:
           TESTLAB_GROUP: unit
