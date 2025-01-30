@@ -1,6 +1,10 @@
 package record
 
-import "log/slog"
+import (
+	"io"
+	"log/slog"
+	"os"
+)
 
 type PredictOptions struct {
 	Repo string
@@ -11,5 +15,7 @@ type PredictOptions struct {
 }
 
 func Predict(l *slog.Logger, env map[string]string, o PredictOptions) error {
-	return nil
+	// Copy stdin to stdout for now.
+	_, err := io.Copy(os.Stdout, os.Stdin)
+	return err
 }
