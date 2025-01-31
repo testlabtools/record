@@ -17,8 +17,15 @@ var predictCmd = &cobra.Command{
 
 		setup := setupCommand(cmd, args)
 
+		wd, err := os.Getwd()
+		if err != nil {
+			return err
+		}
+
 		o := record.PredictOptions{
 			Repo: cmd.Flag("repo").Value.String(),
+
+			WorkDir: wd,
 
 			Runner: cmd.Flag("runner").Value.String(),
 

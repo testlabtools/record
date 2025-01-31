@@ -1,15 +1,17 @@
 package record
 
 import (
-	"bufio"
 	"fmt"
 	"io"
 	"log/slog"
-	"strings"
+
+	"github.com/testlabtools/record/runner"
 )
 
 type PredictOptions struct {
 	Repo string
+
+	WorkDir string
 
 	Runner string
 
@@ -20,21 +22,18 @@ type PredictOptions struct {
 }
 
 func Predict(l *slog.Logger, env map[string]string, o PredictOptions) error {
-	// Copy stdin to stdout for now.
-	scanner := bufio.NewScanner(o.Stdin)
-
-	var tests []string
-	for scanner.Scan() {
-		line := scanner.Text()
-		// Omit any lines with spaces (containing go build output).
-		if strings.Contains(line, " ") {
-			continue
-		}
-		tests = append(tests, line)
+	po := runner.ParserOptions{
+		WorkDir: o.WorkDir,
 	}
 
-	out := strings.Join(tests, "|")
-	fmt.Fprintf(o.Stdout, "^(%s)$", out)
+	run, err := runner.New(o.Runner, po)
+	if err != nil {
+		return err
+	}
 
-	return scanner.Err()
+	if err := run.Parse(o.Stdin); err != nil {
+		return fmt.Errorf("failed to parse stdin for format %q: %w", o.Runner, err)
+	}
+
+	return run.Format(o.Stdout)
 }

@@ -3,6 +3,7 @@ package cmd
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"log/slog"
 	"os"
 	"strings"
@@ -12,6 +13,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/testlabtools/record/client"
 	"github.com/testlabtools/record/fake"
+	"github.com/testlabtools/record/runner"
 )
 
 func TestPredictCommand(t *testing.T) {
@@ -19,7 +21,7 @@ func TestPredictCommand(t *testing.T) {
 		name   string
 		args   []string
 		stdin  string
-		stdout string
+		stdout interface{}
 		check  func(t *testing.T, srv *fake.FakeServer)
 	}{
 		{
@@ -50,6 +52,30 @@ TestUploadCommand
 				assert.Empty(t, srv.Files)
 			},
 		},
+		{
+			name: "github-two-jest",
+			args: []string{
+				"--repo", "../testdata/github/repo",
+				"--runner", "jest",
+			},
+			stdin: `jest-haste-map: duplicated manual mock found: Foo
+  The following files share their name; please delete one of them:
+    * <rootDir>/src/foo/__mocks__/Foo.ts
+    * <rootDir>/src/bar/__mocks__/Foo.ts
+$pwd$/app/web/baz.test.ts
+$pwd$/app/web/quux.test.ts
+`,
+			stdout: runner.JestTestOutput{
+				TestMatch: []string{
+					"/app/web/baz.test.ts",
+					"/app/web/quux.test.ts",
+				},
+			},
+			check: func(t *testing.T, srv *fake.FakeServer) {
+				// TODO
+				assert.Empty(t, srv.Files)
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -63,7 +89,9 @@ TestUploadCommand
 
 			ctx := context.WithValue(context.Background(), "env", srv.Env)
 
-			ctx = context.WithValue(ctx, "stdin", strings.NewReader(tt.stdin))
+			cwd, _ := os.Getwd()
+			stdin := strings.ReplaceAll(tt.stdin, "$pwd$", cwd)
+			ctx = context.WithValue(ctx, "stdin", strings.NewReader(stdin))
 
 			var stdout bytes.Buffer
 			ctx = context.WithValue(ctx, "stdout", &stdout)
@@ -79,7 +107,13 @@ TestUploadCommand
 				tt.check(t, srv)
 			}
 
-			assert.Equal(tt.stdout, stdout.String())
+			if _, ok := tt.stdout.(string); ok {
+				assert.Equal(tt.stdout, stdout.String())
+			} else {
+				var buf bytes.Buffer
+				json.NewEncoder(&buf).Encode(tt.stdout)
+				assert.JSONEq(buf.String(), stdout.String())
+			}
 		})
 	}
 }
