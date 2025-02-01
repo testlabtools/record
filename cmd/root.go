@@ -5,7 +5,6 @@ import (
 	"os"
 	"time"
 
-	sentryslog "github.com/getsentry/sentry-go/slog"
 	"github.com/lmittmann/tint"
 	"github.com/spf13/cobra"
 )
@@ -48,10 +47,10 @@ func setLogLevel(level slog.Level) {
 				Level:      level,
 				TimeFormat: time.Kitchen,
 			}),
-			sentryslog.Option{
-				Level:     slog.LevelDebug,
-				AddSource: true,
-			}.NewSentryHandler(),
+			// sentryslog.Option{
+			// 	Level:     slog.LevelDebug,
+			// 	AddSource: true,
+			// }.NewSentryHandler(),
 		),
 	)
 	slog.SetDefault(l)
