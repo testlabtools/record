@@ -76,14 +76,24 @@ func (t *retryTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 		resp, err = t.base.RoundTrip(req)
 		if err != nil {
 			// Could be a network error, DNS issue, etc.—retry
-			t.log.Info("request failed with error", "attempt", i+1, "err", err)
+			t.log.Info("request failed with error",
+				"method", req.Method,
+				"path", req.URL.Path,
+				"attempt", i+1,
+				"err", err,
+			)
 		} else if resp.StatusCode < 500 {
 			// Return on success or any non-5xx code
 			return resp, nil
 		} else {
 			// If 5xx, we want to retry. Close response body to avoid leaks.
 			resp.Body.Close()
-			t.log.Info("request failed with server error", "attempt", i+1, "status", resp.StatusCode)
+			t.log.Info("request failed with server error",
+				"method", req.Method,
+				"path", req.URL.Path,
+				"attempt", i+1,
+				"status", resp.StatusCode,
+			)
 		}
 
 		// Apply exponential backoff with jitter

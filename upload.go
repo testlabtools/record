@@ -36,24 +36,32 @@ type UploadOptions struct {
 	// Debug enables verbose log messages. By default (false), only messages
 	// with level info are visible.
 	Debug bool
+
+	// Client is the used HTTP client for all API requests.
+	Client *http.Client
 }
 
 type Uploader struct {
 	api client.ClientWithResponses
 	log *slog.Logger
+
+	hc *http.Client
 }
 
-func NewUploader(l *slog.Logger, server, apiKey string) (*Uploader, error) {
+func NewUploader(l *slog.Logger, server, apiKey string, o UploadOptions) (*Uploader, error) {
 	cl, err := client.NewClient(server)
 	if err != nil {
 		return nil, err
 	}
 
-	hc := http.DefaultClient
-	hc.Timeout = 10 * time.Second
-	hc.Transport = &retryTransport{
-		maxRetries: 5,
-		log:        l,
+	hc := o.Client
+	if hc == nil {
+		hc = http.DefaultClient
+		hc.Timeout = 10 * time.Second
+		hc.Transport = &retryTransport{
+			maxRetries: 5,
+			log:        l,
+		}
 	}
 
 	cl.Client = hc
@@ -68,6 +76,8 @@ func NewUploader(l *slog.Logger, server, apiKey string) (*Uploader, error) {
 	return &Uploader{
 		api: api,
 		log: l,
+
+		hc: hc,
 	}, nil
 }
 
@@ -115,7 +125,7 @@ func (u *Uploader) uploadRunFile(ctx context.Context, run *client.CIRunResponse,
 	u.log.Debug("got run file upload", "fileId", fileId, "url", url)
 
 	// Upload data to pre-signed url.
-	if err := uploadFile(ctx, url, data); err != nil {
+	if err := uploadFile(ctx, u.hc, url, data); err != nil {
 		return fmt.Errorf("failed to upload file: %w", err)
 	}
 
@@ -138,7 +148,7 @@ func (u *Uploader) uploadRunFile(ctx context.Context, run *client.CIRunResponse,
 }
 
 // uploadFile uploads the compressed data to the specified URL.
-func uploadFile(ctx context.Context, url string, data io.Reader) error {
+func uploadFile(ctx context.Context, client *http.Client, url string, data io.Reader) error {
 	req, err := http.NewRequestWithContext(ctx, "PUT", url, data)
 	if err != nil {
 		return fmt.Errorf("failed to create HTTP request: %w", err)
@@ -146,7 +156,6 @@ func uploadFile(ctx context.Context, url string, data io.Reader) error {
 
 	req.Header.Set("Content-Type", "application/zstd")
 
-	client := http.DefaultClient
 	resp, err := client.Do(req)
 	if err != nil {
 		return fmt.Errorf("failed to send HTTP request: %w", err)
@@ -185,7 +194,7 @@ func Upload(l *slog.Logger, osEnv map[string]string, o UploadOptions) error {
 	env := collector.Env()
 	l.Debug("collected env vars", "env", env)
 
-	up, err := NewUploader(l, server, apiKey)
+	up, err := NewUploader(l, server, apiKey, o)
 	if err != nil {
 		return err
 	}

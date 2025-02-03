@@ -1,6 +1,7 @@
 package record
 
 import (
+	"bytes"
 	"fmt"
 	"io"
 	"net/http"
@@ -27,25 +28,43 @@ type mockRoundTripper struct {
 func (m *mockRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 	defer func() { m.callCount++ }()
 
+	errs := m.errors
+	if errs == nil {
+		for i := 0; i < len(m.responses); i++ {
+			errs = append(errs, nil)
+		}
+	}
+
 	// If we've used up all the provided responses/errors,
 	// just return the last one for each subsequent call
 	idx := m.callCount
 	if idx >= len(m.responses) {
 		// If we have at least one response, return the last one
 		if len(m.responses) > 0 {
-			return m.responses[len(m.responses)-1], m.errors[len(m.errors)-1]
+			return m.responses[len(m.responses)-1], errs[len(errs)-1]
 		}
 		// Otherwise nothing is defined
 		return nil, nil
 	}
-	return m.responses[idx], m.errors[idx]
+	return m.responses[idx], errs[idx]
 }
 
 // helper function to create a simple http.Response with a given status
 func newHTTPResponse(statusCode int) *http.Response {
 	return &http.Response{
 		StatusCode: statusCode,
-		Body:       io.NopCloser(nil),
+		Body:       io.NopCloser(bytes.NewReader(nil)),
+	}
+}
+
+// helper function to create a simple http.Response with a given status
+func newJSONResponse(statusCode int) *http.Response {
+	return &http.Response{
+		StatusCode: statusCode,
+		Header: http.Header{
+			"Content-Type": []string{"json"},
+		},
+		Body: io.NopCloser(bytes.NewReader(nil)),
 	}
 }
 

@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"net/http"
 	"os"
 	"strings"
 	"testing"
@@ -103,6 +104,58 @@ func TestUploadFromGithub(t *testing.T) {
 				assert.Empty(srv.Files)
 			}
 		})
+	}
+}
+
+func TestUploadWithRetryOnServerError(t *testing.T) {
+	assert := assert.New(t)
+
+	l := slogt.New(t)
+
+	createRun := newJSONResponse(201)
+	createRun.Body = io.NopCloser(strings.NewReader(`{"id": "42"}`))
+
+	uploadRunFile := newJSONResponse(201)
+	uploadRunFile.Body = io.NopCloser(strings.NewReader(`{}`))
+
+	uploadS3 := newHTTPResponse(200)
+
+	updateFileInfo := newJSONResponse(200)
+	updateFileInfo.Body = io.NopCloser(strings.NewReader(`{}`))
+
+	mock := &mockRoundTripper{
+		responses: []*http.Response{
+			newHTTPResponse(http.StatusBadGateway),
+			createRun,
+			newHTTPResponse(http.StatusBadGateway),
+			uploadRunFile,
+			newHTTPResponse(http.StatusBadGateway),
+			uploadS3,
+			newHTTPResponse(http.StatusBadGateway),
+			updateFileInfo,
+		},
+	}
+
+	rt := &retryTransport{
+		base:       mock,
+		maxRetries: 3,
+		log:        l,
+		sleep:      sleepNoop(t),
+	}
+
+	options := UploadOptions{
+		Reports: "testdata/github/reports",
+		Repo:    "testdata/github/repo",
+		Client:  &http.Client{Transport: rt},
+	}
+
+	srv := fake.NewServer(t, l, client.Github)
+	defer srv.Close()
+
+	env := srv.Env
+	err := Upload(l, env, options)
+	if !assert.NoError(err) {
+		return
 	}
 }
 
