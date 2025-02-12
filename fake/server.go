@@ -28,7 +28,7 @@ type FakeServer struct {
 	Runs     map[string]client.CIRunRequest
 	Files    [][]byte
 	fileUrls []string
-	status   map[int]client.RunFileUploadStatus
+	status   map[int]client.FileUploadStatus
 }
 
 func (s *FakeServer) Close() {
@@ -56,7 +56,7 @@ func NewServer(t *testing.T, l *slog.Logger, ci client.CIProviderName) *FakeServ
 		Env: env,
 
 		Runs:   make(map[string]client.CreateRunJSONRequestBody),
-		status: make(map[int]client.RunFileUploadStatus),
+		status: make(map[int]client.FileUploadStatus),
 	}
 
 	switch ci {

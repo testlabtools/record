@@ -67,6 +67,10 @@ func TestCommitFiles(t *testing.T) {
 	assert := assert.New(t)
 
 	r := NewRepo("../testdata/github/repo")
+	if !assert.True(r.Exists()) {
+		return
+	}
+
 	commits, err := r.CommitFiles()
 	if !assert.NoError(err) {
 		return

@@ -71,10 +71,10 @@ func (r Repo) CommitFiles() ([]CommitFile, error) {
 	}
 	cmd := exec.Command("git", args...)
 
-	stdout, err := cmd.Output()
-
 	var stderr bytes.Buffer
 	cmd.Stderr = &stderr
+
+	stdout, err := cmd.Output()
 
 	if err != nil {
 		return nil, fmt.Errorf("failed to get commit files for args %q: stderr=%q err=%w", args, stderr.String(), err)

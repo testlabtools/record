@@ -9,6 +9,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/testlabtools/record/client"
 	"github.com/testlabtools/record/fake"
+	"github.com/testlabtools/record/git"
 	"github.com/testlabtools/record/tar"
 	"github.com/testlabtools/record/zstd"
 )
@@ -56,6 +57,11 @@ func TestCollectorAddsCommitFiles(t *testing.T) {
 			options := UploadOptions{
 				Reports: "testdata/github/reports",
 				Repo:    "testdata/github/repo",
+			}
+
+			r := git.NewRepo(options.Repo)
+			if !assert.True(r.Exists()) {
+				return
 			}
 
 			srv.Env["GITHUB_REF"] = "refs/head/" + tt.branch
