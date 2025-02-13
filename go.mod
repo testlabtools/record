@@ -1,6 +1,6 @@
 module github.com/testlabtools/record
 
-go 1.23.5
+go 1.23.6
 
 require (
 	github.com/getsentry/sentry-go v0.31.1
