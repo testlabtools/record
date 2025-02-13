@@ -4,8 +4,10 @@ on:
   pull_request:
   push:
     branches: [main]
+
+    # Tags do not use the github cache.
     tags:
-      - "*"
+      - "*" # zizmor: ignore[cache-poisoning]
 
 defaults:
   run:
@@ -24,13 +26,16 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          persist-credentials: false
 
       - uses: actions/setup-go@v5
         with:
           go-version-file: 'go.mod'
           cache: false
 
+      # Github cache is disabled for tags to avoid cache poisoning.
       - uses: actions/cache@v4
+        if: github.ref_type != 'tag'
         with:
           path: |
             ~/.cache/go-build

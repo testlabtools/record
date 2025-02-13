@@ -1,7 +1,7 @@
 name: tidy
 
 on:
-  pull_request_target:
+  pull_request_target: # zizmor: ignore[dangerous-triggers]
     paths:
       - 'go.mod'
       - 'go.sum'
@@ -12,13 +12,14 @@ permissions:
 jobs:
   update:
     runs-on: ubuntu-latest
-    if: github.actor == 'dependabot[bot]'
+    if: github.event.pull_request.user.login == 'dependabot[bot]' && github.repository == github.event.pull_request.head.repo.full_name
     steps:
       - name: Checkout
         uses: actions/checkout@v4
         with:
           ref: ${{ github.event.pull_request.head.ref }}
           fetch-depth: 2
+          persist-credentials: false
 
       - uses: actions/setup-go@v5
         with:
