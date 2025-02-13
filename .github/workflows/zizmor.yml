@@ -11,7 +11,8 @@ defaults:
   run:
     shell: bash
 
-permissions: {}
+permissions:
+  security-events: write
 
 jobs:
   zizmor:
