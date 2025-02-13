@@ -27,7 +27,7 @@ func (p *Jest) Parse(r io.Reader) error {
 
 	for scanner.Scan() {
 		line := scanner.Text()
-		// Omit any lines that don't start with a slash. They could be jset
+		// Omit any lines that don't start with a slash. They could be jest
 		// warnings (like jest-haste-map complaining about a duplicated manual
 		// mock found).
 		if !strings.HasPrefix(line, "/") {
