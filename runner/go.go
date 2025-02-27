@@ -33,9 +33,13 @@ func (p *GoTest) Parse(r io.Reader) error {
 	return scanner.Err()
 }
 
-func (p *GoTest) Format(w io.Writer) error {
+func (p *GoTest) Format(files []string, w io.Writer) error {
 	// Create a regexp pattern as test format.
-	out := strings.Join(p.tests, "|")
+	out := strings.Join(files, "|")
 	_, err := fmt.Fprintf(w, "^(%s)$", out)
 	return err
+}
+
+func (p *GoTest) Files() []string {
+	return p.tests
 }

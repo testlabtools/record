@@ -39,10 +39,10 @@ func (p *Jest) Parse(r io.Reader) error {
 	return scanner.Err()
 }
 
-func (p *Jest) Format(w io.Writer) error {
+func (p *Jest) Format(files []string, w io.Writer) error {
 	var matches []string
 
-	for _, t := range p.tests {
+	for _, t := range files {
 		match := strings.TrimPrefix(t, p.options.WorkDir)
 		matches = append(matches, match)
 	}
@@ -51,4 +51,8 @@ func (p *Jest) Format(w io.Writer) error {
 		TestMatch: matches,
 	}
 	return json.NewEncoder(w).Encode(o)
+}
+
+func (p *Jest) Files() []string {
+	return p.tests
 }

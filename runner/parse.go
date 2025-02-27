@@ -11,7 +11,8 @@ type ParserOptions struct {
 
 type Parser interface {
 	Parse(r io.Reader) error
-	Format(w io.Writer) error
+	Format(files []string, w io.Writer) error
+	Files() []string
 }
 
 var parsers = map[string]func(o ParserOptions) Parser{
