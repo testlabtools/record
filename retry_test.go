@@ -30,9 +30,7 @@ func (m *mockRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) 
 
 	errs := m.errors
 	if errs == nil {
-		for i := 0; i < len(m.responses); i++ {
-			errs = append(errs, nil)
-		}
+		errs = make([]error, len(m.responses))
 	}
 
 	// If we've used up all the provided responses/errors,

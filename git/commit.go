@@ -29,15 +29,18 @@ func (r *Repo) CommitInfo(ref string) (*CommitInfo, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to get commit info for args %q: stderr=%q err=%w", args, stderr.String(), err)
 	}
+
+	ci := &CommitInfo{}
+
 	line := strings.TrimSpace(string(out))
 	if line == "" {
-		return nil, nil
+		return ci, nil
 	}
 
 	fields := strings.SplitN(line, "\t", 2)
 
-	return &CommitInfo{
-		AuthorEmail: fields[0],
-		Subject:     fields[1],
-	}, nil
+	ci.AuthorEmail = fields[0]
+	ci.Subject = fields[1]
+
+	return ci, nil
 }
