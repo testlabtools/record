@@ -40,11 +40,17 @@ var Root = &cobra.Command{
 	SilenceErrors: true,
 }
 
-func setLogLevel(level slog.Level) {
+var programLevel = new(slog.LevelVar)
+
+func setLogLevel(l slog.Level) {
+	programLevel.Set(l)
+}
+
+func init() {
 	l := slog.New(
 		Fanout(
 			tint.NewHandler(os.Stderr, &tint.Options{
-				Level:      level,
+				Level:      programLevel,
 				TimeFormat: time.Kitchen,
 			}),
 			// sentryslog.Option{
@@ -54,10 +60,6 @@ func setLogLevel(level slog.Level) {
 		),
 	)
 	slog.SetDefault(l)
-}
-
-func init() {
-	setLogLevel(slog.LevelInfo)
 
 	// Here you will define your flags and configuration settings.
 	// Cobra supports persistent flags, which, if defined here,
