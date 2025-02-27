@@ -37,7 +37,7 @@ func Predict(l *slog.Logger, env map[string]string, o PredictOptions) error {
 		return fmt.Errorf("failed to parse stdin for format %q: %w", o.Runner, err)
 	}
 
-	predicted, err := predict(l, env, run)
+	predicted, err := predict(l, env, o, run)
 	if err != nil {
 		l.Error("failed to predict", "err", err)
 
@@ -49,8 +49,8 @@ func Predict(l *slog.Logger, env map[string]string, o PredictOptions) error {
 	return run.Format(predicted, o.Stdout)
 }
 
-func predict(l *slog.Logger, osEnv map[string]string, input runner.Parser) ([]string, error) {
-	_, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
+func predict(l *slog.Logger, osEnv map[string]string, o PredictOptions, input runner.Parser) ([]string, error) {
+	_, cancel := context.WithTimeout(context.Background(), 1*time.Minute)
 	defer cancel()
 
 	server := osEnv["TESTLAB_HOST"]
@@ -64,12 +64,23 @@ func predict(l *slog.Logger, osEnv map[string]string, input runner.Parser) ([]st
 	}
 
 	files := input.Files()
-	l.Info("upload predict", "server", server, "apiKey", mask(apiKey), "files", len(files))
 
 	if len(files) == 0 {
 		l.Warn("no test files read from stdin")
 		return files, nil
 	}
+
+	collector, err := NewCollector(l, o.Repo, osEnv)
+	if err != nil {
+		return nil, err
+	}
+
+	env := collector.Env()
+	l.Debug("collected env vars", "env", env)
+
+	// TODO
+
+	l.Info("upload predict", "server", server, "apiKey", mask(apiKey), "files", len(files))
 
 	return files, nil
 }

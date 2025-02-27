@@ -67,13 +67,17 @@ func TestCollectorAddsCommitFiles(t *testing.T) {
 			srv.Env["GITHUB_REF"] = "refs/head/" + tt.branch
 			srv.Env["GITHUB_REF_NAME"] = tt.branch
 
-			collector, err := NewCollector(l, options, srv.Env)
+			collector, err := NewCollector(l, options.Repo, srv.Env)
 			if !assert.NoError(err) {
 				return
 			}
 
 			var data bytes.Buffer
-			err = collector.Bundle(tt.created, &data)
+			err = collector.Bundle(BundleOptions{
+				InitialRun: tt.created,
+				ReportsDir: options.Reports,
+				MaxReports: options.MaxReports,
+			}, &data)
 			if !assert.NoError(err) {
 				return
 			}

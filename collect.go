@@ -19,25 +19,19 @@ import (
 )
 
 type Collector struct {
-	log     *slog.Logger
-	options UploadOptions
-	repo    *git.Repo
+	log  *slog.Logger
+	repo *git.Repo
 
 	env   RunEnv
 	osEnv map[string]string
 }
 
-func NewCollector(l *slog.Logger, o UploadOptions, osEnv map[string]string) (*Collector, error) {
-	r := git.NewRepo(o.Repo)
-
-	if o.MaxReports == 0 {
-		o.MaxReports = DefaulMaxReports
-	}
+func NewCollector(l *slog.Logger, repo string, osEnv map[string]string) (*Collector, error) {
+	r := git.NewRepo(repo)
 
 	c := &Collector{
-		log:     l,
-		options: o,
-		repo:    r,
+		log:  l,
+		repo: r,
 
 		osEnv: osEnv,
 	}
@@ -243,7 +237,7 @@ func (c *Collector) findCodeOwners(dir string) string {
 }
 
 func (c *Collector) addCodeOwners(files *map[string][]byte) error {
-	repo := c.options.Repo
+	repo := c.repo.Dir
 	file := c.findCodeOwners(repo)
 
 	if file == "" {
@@ -317,10 +311,23 @@ func (c *Collector) addGitSummary(files *map[string][]byte) error {
 	return nil
 }
 
-func (c *Collector) Bundle(initial bool, w io.Writer) error {
-	dir := c.options.Reports
-	c.log.Debug("read file reports", "dir", dir, "max", c.options.MaxReports)
-	files, err := readReports(dir, c.options.MaxReports)
+type BundleOptions struct {
+	InitialRun bool
+
+	ReportsDir string
+	MaxReports int
+}
+
+func (c *Collector) Bundle(o BundleOptions, w io.Writer) error {
+	dir := o.ReportsDir
+
+	maxReports := o.MaxReports
+	if maxReports == 0 {
+		maxReports = DefaulMaxReports
+	}
+
+	c.log.Debug("read file reports", "dir", dir, "max", maxReports)
+	files, err := readReports(dir, maxReports)
 	if err != nil {
 		return fmt.Errorf("failed to read reports (%q): %w", dir, err)
 	}
@@ -330,7 +337,7 @@ func (c *Collector) Bundle(initial bool, w io.Writer) error {
 		return nil
 	}
 
-	if initial {
+	if o.InitialRun {
 		// Add CODEOWNERS file to the initial run only. This avoids storing the
 		// same information in each run bundle file.
 		if err := c.addCodeOwners(&files); err != nil {

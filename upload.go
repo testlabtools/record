@@ -186,7 +186,7 @@ func Upload(l *slog.Logger, osEnv map[string]string, o UploadOptions) error {
 
 	l.Info("upload run", "server", server, "apiKey", mask(apiKey))
 
-	collector, err := NewCollector(l, o, osEnv)
+	collector, err := NewCollector(l, o.Repo, osEnv)
 	if err != nil {
 		return err
 	}
@@ -220,7 +220,11 @@ func Upload(l *slog.Logger, osEnv map[string]string, o UploadOptions) error {
 	l.Info("created run", "runId", run.Id, "created", created, "reports", o.Reports)
 
 	var data bytes.Buffer
-	if err := collector.Bundle(created, &data); err != nil {
+	if err := collector.Bundle(BundleOptions{
+		InitialRun: created,
+		ReportsDir: o.Reports,
+		MaxReports: o.MaxReports,
+	}, &data); err != nil {
 		return fmt.Errorf("failed to bundle: %w", err)
 	}
 
