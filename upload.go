@@ -12,8 +12,6 @@ import (
 	"github.com/testlabtools/record/client"
 )
 
-const HeaderAPIKey = "X-API-Key"
-
 const DefaulMaxReports = 100
 
 type UploadOptions struct {
@@ -41,48 +39,8 @@ type UploadOptions struct {
 	Client *http.Client
 }
 
-type Uploader struct {
-	api client.ClientWithResponses
-	log *slog.Logger
-
-	hc *http.Client
-}
-
-func NewUploader(l *slog.Logger, server, apiKey string, o UploadOptions) (*Uploader, error) {
-	cl, err := client.NewClient(server)
-	if err != nil {
-		return nil, err
-	}
-
-	hc := o.Client
-	if hc == nil {
-		hc = http.DefaultClient
-		hc.Timeout = 10 * time.Second
-		hc.Transport = &retryTransport{
-			maxRetries: 5,
-			log:        l,
-		}
-	}
-
-	cl.Client = hc
-
-	cl.RequestEditors = append(cl.RequestEditors, func(ctx context.Context, r *http.Request) error {
-		r.Header.Add(HeaderAPIKey, apiKey)
-		return nil
-	})
-
-	api := client.ClientWithResponses{ClientInterface: cl}
-
-	return &Uploader{
-		api: api,
-		log: l,
-
-		hc: hc,
-	}, nil
-}
-
 // createRun creates a CI run.
-func (u *Uploader) createRun(ctx context.Context, body client.CreateRunJSONRequestBody) (*client.CIRunResponse, bool, error) {
+func (u *api) createRun(ctx context.Context, body client.CreateRunJSONRequestBody) (*client.CIRunResponse, bool, error) {
 	run, err := u.api.CreateRunWithResponse(ctx, body)
 	if err != nil {
 		return nil, false, fmt.Errorf("failed to create run: %w", err)
@@ -101,7 +59,7 @@ func (u *Uploader) createRun(ctx context.Context, body client.CreateRunJSONReque
 }
 
 // uploadRun uploads the data to the pre-signed URL of the run file.
-func (u *Uploader) uploadRunFile(ctx context.Context, run *client.CIRunResponse, data io.Reader) error {
+func (u *api) uploadRunFile(ctx context.Context, run *client.CIRunResponse, data io.Reader) error {
 	runId := run.Id
 
 	// Get pre-signed url for the new run file.
@@ -194,25 +152,15 @@ func Upload(l *slog.Logger, osEnv map[string]string, o UploadOptions) error {
 	env := collector.Env()
 	l.Debug("collected env vars", "env", env)
 
-	up, err := NewUploader(l, server, apiKey, o)
+	api, err := newApi(l, server, apiKey)
 	if err != nil {
 		return err
 	}
 
-	run, created, err := up.createRun(ctx, client.CreateRunJSONRequestBody{
-		ActorName:      env.ActorName,
-		CiProviderName: env.CIProviderName,
-		GitRef:         env.GitRef,
-		GitRefName:     env.GitRefName,
-		GitRepo:        env.GitRepo,
-		GitSha:         env.GitSha,
-		Group:          env.Group,
-		RunAttempt:     env.RunAttempt,
-		RunId:          env.RunId,
-		RunNumber:      env.RunNumber,
-		CiEnv:          env.CIEnv,
-		Started:        o.Started,
-	})
+	runReq := env.RunRequest()
+	runReq.Started = o.Started
+
+	run, created, err := api.createRun(ctx, runReq)
 	if err != nil {
 		return fmt.Errorf("failed to create run: %w", err)
 	}
@@ -233,7 +181,7 @@ func Upload(l *slog.Logger, osEnv map[string]string, o UploadOptions) error {
 	} else {
 		l.Info("tarball compressed", "size", data.Len())
 
-		if err := up.uploadRunFile(ctx, run, &data); err != nil {
+		if err := api.uploadRunFile(ctx, run, &data); err != nil {
 			return fmt.Errorf("failed to upload run: %w", err)
 		}
 	}

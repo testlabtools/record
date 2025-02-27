@@ -5,8 +5,10 @@ import (
 	"fmt"
 	"io"
 	"log/slog"
+	"net/http"
 	"time"
 
+	"github.com/testlabtools/record/client"
 	"github.com/testlabtools/record/runner"
 )
 
@@ -50,7 +52,7 @@ func Predict(l *slog.Logger, env map[string]string, o PredictOptions) error {
 }
 
 func predict(l *slog.Logger, osEnv map[string]string, o PredictOptions, input runner.Parser) ([]string, error) {
-	_, cancel := context.WithTimeout(context.Background(), 1*time.Minute)
+	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Minute)
 	defer cancel()
 
 	server := osEnv["TESTLAB_HOST"]
@@ -78,9 +80,50 @@ func predict(l *slog.Logger, osEnv map[string]string, o PredictOptions, input ru
 	env := collector.Env()
 	l.Debug("collected env vars", "env", env)
 
-	// TODO
-
 	l.Info("upload predict", "server", server, "apiKey", mask(apiKey), "files", len(files))
 
-	return files, nil
+	api, err := newApi(l, server, apiKey)
+	if err != nil {
+		return nil, fmt.Errorf("failed to initialize api: %w", err)
+	}
+
+	var testFiles []client.PredictTestFile
+	for _, f := range files {
+		testFiles = append(testFiles, client.PredictTestFile{
+			Path: f,
+		})
+	}
+
+	req := client.PredictRequest{
+		CiRun:     env.RunRequest(),
+		TestFiles: testFiles,
+	}
+	predicted, err := api.predictTests(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+
+	var out []string
+	for _, file := range predicted.TestFiles {
+		out = append(out, file.Path)
+	}
+
+	return out, nil
+}
+
+// predictTests predicts what tests to run for a CI run.
+func (u *api) predictTests(ctx context.Context, body client.PredictRequest) (*client.PredictResponse, error) {
+	params := &client.PredictTestsParams{
+		// TODO add zstd compression.
+	}
+	predict, err := u.api.PredictTestsWithResponse(ctx, params, body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to predict tests: %w", err)
+	}
+
+	if status := predict.StatusCode(); status != http.StatusOK {
+		return nil, fmt.Errorf("predict tests returned invalid status code: %d", status)
+	}
+
+	return predict.JSON200, nil
 }

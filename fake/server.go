@@ -113,7 +113,7 @@ func NewServer(t *testing.T, l *slog.Logger, ci client.CIProviderName) *FakeServ
 		resp := client.CIRunResponse{
 			Id: fmt.Sprint(len(fs.Runs)),
 		}
-		json.NewEncoder(w).Encode(resp)
+		mustEncode(w, resp)
 	}
 
 	postFileUpload := func(w http.ResponseWriter, r *http.Request) {
@@ -126,7 +126,7 @@ func NewServer(t *testing.T, l *slog.Logger, ci client.CIProviderName) *FakeServ
 			Id:  fmt.Sprint(id),
 			Url: url,
 		}
-		json.NewEncoder(w).Encode(resp)
+		mustEncode(w, resp)
 	}
 
 	patchFileInfo := func(w http.ResponseWriter, r *http.Request) {
@@ -141,7 +141,7 @@ func NewServer(t *testing.T, l *slog.Logger, ci client.CIProviderName) *FakeServ
 		fs.status[fileId] = info.UploadStatus
 
 		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(info)
+		mustEncode(w, info)
 	}
 
 	putS3File := func(w http.ResponseWriter, r *http.Request) {
@@ -150,11 +150,28 @@ func NewServer(t *testing.T, l *slog.Logger, ci client.CIProviderName) *FakeServ
 		w.WriteHeader(http.StatusOK)
 	}
 
+	predict := func(w http.ResponseWriter, r *http.Request) {
+		var req client.PredictRequest
+		mustDecode(r.Body, &req)
+
+		assert.NotEmpty(req.TestFiles, "TestFiles")
+		assert.NotEmpty(req.CiRun.GitRepo, "GITHUB_REPO")
+		assert.NotEmpty(req.CiRun.Group, "TESTLAB_GROUP")
+
+		w.WriteHeader(http.StatusOK)
+		resp := client.PredictResponse{
+			TestFiles: req.TestFiles,
+		}
+		mustEncode(w, resp)
+	}
+
 	mux.HandleFunc("POST /api/v1/runs", secure(createRun))
 
 	mux.HandleFunc("POST /api/v1/runs/{runId}/files/upload", secure(postFileUpload))
 
 	mux.HandleFunc("PATCH /api/v1/runs/{runId}/files/{fileId}", secure(patchFileInfo))
+
+	mux.HandleFunc("POST /api/v1/predict", secure(predict))
 
 	mux.HandleFunc("PUT /s3/files/{fileId}", log(putS3File))
 
@@ -196,6 +213,13 @@ func (s *FakeServer) ExtractTar(i int) (map[string][]byte, error) {
 func mustDecode(r io.ReadCloser, v interface{}) {
 	defer r.Close()
 	err := json.NewDecoder(r).Decode(&v)
+	if err != nil {
+		panic(err)
+	}
+}
+
+func mustEncode(w io.Writer, v interface{}) {
+	err := json.NewEncoder(w).Encode(v)
 	if err != nil {
 		panic(err)
 	}

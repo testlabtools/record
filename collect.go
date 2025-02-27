@@ -68,6 +68,22 @@ type RunEnv struct {
 	CIEnv          *map[string]interface{}
 }
 
+func (env RunEnv) RunRequest() client.CIRunRequest {
+	return client.CIRunRequest{
+		ActorName:      env.ActorName,
+		CiProviderName: env.CIProviderName,
+		GitRef:         env.GitRef,
+		GitRefName:     env.GitRefName,
+		GitRepo:        env.GitRepo,
+		GitSha:         env.GitSha,
+		Group:          env.Group,
+		RunAttempt:     env.RunAttempt,
+		RunId:          env.RunId,
+		RunNumber:      env.RunNumber,
+		CiEnv:          env.CIEnv,
+	}
+}
+
 func (c *Collector) collectGitEnv() (map[string]interface{}, error) {
 	env := make(map[string]interface{})
 
