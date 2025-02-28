@@ -65,7 +65,7 @@ func init() {
 	// Cobra supports persistent flags, which, if defined here,
 	// will be global for your application.
 
-	Root.PersistentFlags().String("repo", "", "path to git repo")
+	Root.PersistentFlags().String("repo", ".", "path to git repo")
 
 	Root.PersistentFlags().Bool("debug", false, "enable verbose debug logs")
 
