@@ -80,11 +80,36 @@ func predict(l *slog.Logger, osEnv map[string]string, o PredictOptions, input ru
 	env := collector.Env()
 	l.Debug("collected env vars", "env", env)
 
-	l.Info("upload predict", "server", server, "apiKey", mask(apiKey), "files", len(files))
+	l.Info("upload predict request", "server", server, "apiKey", mask(apiKey), "files", len(files))
 
 	api, err := newApi(l, server, apiKey)
 	if err != nil {
 		return nil, fmt.Errorf("failed to initialize api: %w", err)
+	}
+
+	summary, err := collector.gitSummary()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get git summary: %w", err)
+	}
+
+	var ds *client.GitDiffStat
+	if summary != nil {
+		var changes []client.GitFileChange
+		for _, c := range summary.DiffStat.Changes {
+			changes = append(changes, client.GitFileChange{
+				Name:       c.Name,
+				Insertions: c.Insertions,
+				Deletions:  c.Deletions,
+			})
+		}
+
+		ds = &client.GitDiffStat{
+			Hash:       summary.DiffStat.Hash,
+			Changes:    changes,
+			Files:      summary.DiffStat.Files,
+			Insertions: summary.DiffStat.Insertions,
+			Deletions:  summary.DiffStat.Deletions,
+		}
 	}
 
 	var testFiles []client.PredictTestFile
@@ -95,7 +120,10 @@ func predict(l *slog.Logger, osEnv map[string]string, o PredictOptions, input ru
 	}
 
 	req := client.PredictRequest{
-		CiRun:     env.RunRequest(),
+		CiRun: env.RunRequest(),
+		GitSummary: client.GitSummary{
+			DiffStat: ds,
+		},
 		TestFiles: testFiles,
 	}
 	predicted, err := api.predictTests(ctx, req)

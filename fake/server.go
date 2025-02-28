@@ -157,6 +157,7 @@ func NewServer(t *testing.T, l *slog.Logger, ci client.CIProviderName) *FakeServ
 		assert.NotEmpty(req.TestFiles, "TestFiles")
 		assert.NotEmpty(req.CiRun.GitRepo, "GITHUB_REPO")
 		assert.NotEmpty(req.CiRun.Group, "TESTLAB_GROUP")
+		assert.NotEmpty(req.GitSummary, "GitSummary")
 
 		w.WriteHeader(http.StatusOK)
 		resp := client.PredictResponse{

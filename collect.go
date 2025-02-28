@@ -286,24 +286,31 @@ type GitSummary struct {
 
 const GitSummaryFileName = "git.json"
 
-func (c *Collector) addGitSummary(files *map[string][]byte) error {
+func (c *Collector) gitSummary() (*GitSummary, error) {
 	if !c.repo.Exists() {
 		c.log.Warn("cannot get git summary since repo does not exist", "dir", c.repo.Dir)
-		return nil
+		return nil, nil
 	}
 
 	ds, err := c.repo.DiffStat("HEAD")
 	if err != nil {
+		return nil, err
+	}
+
+	return &GitSummary{
+		DiffStat: ds,
+	}, nil
+}
+
+func (c *Collector) addGitSummary(files *map[string][]byte) error {
+	summary, err := c.gitSummary()
+	if err != nil || summary == nil {
 		return err
 	}
 
 	main, err := c.repo.MainBranch()
 	if err != nil {
 		return err
-	}
-
-	summary := GitSummary{
-		DiffStat: ds,
 	}
 
 	c.log.Debug("compare git ref name with main branch",
