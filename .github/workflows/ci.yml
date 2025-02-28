@@ -48,7 +48,7 @@ jobs:
         run: make deps -j4
 
       - name: Build
-        run: make build
+        run: make build lint -j4
 
       - name: Test (JUnit)
         run: make test-junit
