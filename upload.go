@@ -152,7 +152,7 @@ func Upload(l *slog.Logger, osEnv map[string]string, o UploadOptions) error {
 	env := collector.Env()
 	l.Debug("collected env vars", "env", env)
 
-	api, err := newApi(l, server, apiKey)
+	api, err := newApi(l, o.Client, server, apiKey)
 	if err != nil {
 		return err
 	}

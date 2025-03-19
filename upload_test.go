@@ -87,10 +87,8 @@ func TestUploadFromGithub(t *testing.T) {
 
 			if tt.err != "" {
 				assert.ErrorContains(err, tt.err)
-			} else {
-				if !assert.NoError(err) {
-					return
-				}
+			} else if !assert.NoError(err) {
+				return
 			}
 
 			if len(tt.expected) > 0 {

@@ -23,6 +23,8 @@ type PredictOptions struct {
 
 	Stdin  io.Reader
 	Stdout io.Writer
+
+	client *http.Client
 }
 
 func Predict(l *slog.Logger, env map[string]string, o PredictOptions) error {
@@ -82,7 +84,7 @@ func predict(l *slog.Logger, osEnv map[string]string, o PredictOptions, input ru
 
 	l.Info("upload predict request", "server", server, "apiKey", mask(apiKey), "files", len(files))
 
-	api, err := newApi(l, server, apiKey)
+	api, err := newApi(l, o.client, server, apiKey)
 	if err != nil {
 		return nil, fmt.Errorf("failed to initialize api: %w", err)
 	}

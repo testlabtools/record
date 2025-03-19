@@ -17,17 +17,22 @@ type api struct {
 	log *slog.Logger
 }
 
-func newApi(l *slog.Logger, server, apiKey string) (*api, error) {
+func newApi(l *slog.Logger, hc *http.Client, server, apiKey string) (*api, error) {
 	cl, err := client.NewClient(server)
 	if err != nil {
 		return nil, err
 	}
 
-	hc := http.DefaultClient
-	hc.Timeout = 10 * time.Second
-	hc.Transport = &retryTransport{
-		maxRetries: 5,
-		log:        l,
+	if hc == nil {
+		l.Debug("use default http client with retry")
+		hc = http.DefaultClient
+		hc.Timeout = 10 * time.Second
+		hc.Transport = &retryTransport{
+			maxRetries: 5,
+			log:        l,
+		}
+	} else {
+		l.Debug("use provided http client")
 	}
 
 	cl.Client = hc

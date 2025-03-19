@@ -19,9 +19,25 @@ import (
 
 const HeaderAPIKey = "X-API-Key"
 
+type FakeHandlers struct {
+	CreateRun http.HandlerFunc
+
+	PostFileUpload http.HandlerFunc
+
+	PatchFileInfo http.HandlerFunc
+
+	Predict http.HandlerFunc
+
+	PutS3File http.HandlerFunc
+
+	NotFound http.HandlerFunc
+}
+
 type FakeServer struct {
 	mux    *http.ServeMux
 	server *httptest.Server
+
+	Handlers *FakeHandlers
 
 	Env map[string]string
 
@@ -29,6 +45,8 @@ type FakeServer struct {
 	Files    [][]byte
 	fileUrls []string
 	status   map[int]client.FileUploadStatus
+
+	Predicts []client.PredictRequest
 }
 
 func (s *FakeServer) Close() {
@@ -66,14 +84,14 @@ func NewServer(t *testing.T, l *slog.Logger, ci client.CIProviderName) *FakeServ
 		panic(fmt.Sprintf("unknown CI provider name: %q", ci))
 	}
 
-	log := func(handler http.HandlerFunc) http.HandlerFunc {
+	log := func(handler *http.HandlerFunc) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
 			l.Info("got fake request", "method", r.Method, "url", r.URL)
-			handler(w, r)
+			(*handler)(w, r)
 		}
 	}
 
-	secure := func(handler http.HandlerFunc) http.HandlerFunc {
+	secure := func(handler *http.HandlerFunc) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
 			// Check X-API-Key is present.
 			assert.NotEmpty(r.Header.Get(HeaderAPIKey), HeaderAPIKey+" is missing")
@@ -83,7 +101,10 @@ func NewServer(t *testing.T, l *slog.Logger, ci client.CIProviderName) *FakeServ
 		}
 	}
 
-	createRun := func(w http.ResponseWriter, r *http.Request) {
+	h := &FakeHandlers{}
+	fs.Handlers = h
+
+	h.CreateRun = func(w http.ResponseWriter, r *http.Request) {
 		var run client.CIRunRequest
 		mustDecode(r.Body, &run)
 
@@ -116,7 +137,9 @@ func NewServer(t *testing.T, l *slog.Logger, ci client.CIProviderName) *FakeServ
 		mustEncode(w, resp)
 	}
 
-	postFileUpload := func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("POST /api/v1/runs", secure(&h.CreateRun))
+
+	h.PostFileUpload = func(w http.ResponseWriter, r *http.Request) {
 		id := len(fs.fileUrls) + 1
 		url := fmt.Sprintf("%s/s3/files/%d", server.URL, id)
 		fs.fileUrls = append(fs.fileUrls, url)
@@ -129,7 +152,9 @@ func NewServer(t *testing.T, l *slog.Logger, ci client.CIProviderName) *FakeServ
 		mustEncode(w, resp)
 	}
 
-	patchFileInfo := func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("POST /api/v1/runs/{runId}/files/upload", secure(&h.PostFileUpload))
+
+	h.PatchFileInfo = func(w http.ResponseWriter, r *http.Request) {
 		fileId, err := strconv.Atoi(r.PathValue("fileId"))
 		if err != nil {
 			panic(err)
@@ -144,15 +169,13 @@ func NewServer(t *testing.T, l *slog.Logger, ci client.CIProviderName) *FakeServ
 		mustEncode(w, info)
 	}
 
-	putS3File := func(w http.ResponseWriter, r *http.Request) {
-		body, _ := io.ReadAll(r.Body)
-		fs.Files = append(fs.Files, body)
-		w.WriteHeader(http.StatusOK)
-	}
+	mux.HandleFunc("PATCH /api/v1/runs/{runId}/files/{fileId}", secure(&h.PatchFileInfo))
 
-	predict := func(w http.ResponseWriter, r *http.Request) {
+	h.Predict = func(w http.ResponseWriter, r *http.Request) {
 		var req client.PredictRequest
 		mustDecode(r.Body, &req)
+
+		fs.Predicts = append(fs.Predicts, req)
 
 		assert.NotEmpty(req.TestFiles, "TestFiles")
 		assert.NotEmpty(req.CiRun.GitRepo, "GITHUB_REPO")
@@ -166,19 +189,20 @@ func NewServer(t *testing.T, l *slog.Logger, ci client.CIProviderName) *FakeServ
 		mustEncode(w, resp)
 	}
 
-	mux.HandleFunc("POST /api/v1/runs", secure(createRun))
+	mux.HandleFunc("POST /api/v1/predict", secure(&h.Predict))
 
-	mux.HandleFunc("POST /api/v1/runs/{runId}/files/upload", secure(postFileUpload))
+	h.PutS3File = func(w http.ResponseWriter, r *http.Request) {
+		body, _ := io.ReadAll(r.Body)
+		fs.Files = append(fs.Files, body)
+		w.WriteHeader(http.StatusOK)
+	}
 
-	mux.HandleFunc("PATCH /api/v1/runs/{runId}/files/{fileId}", secure(patchFileInfo))
+	mux.HandleFunc("PUT /s3/files/{fileId}", log(&h.PutS3File))
 
-	mux.HandleFunc("POST /api/v1/predict", secure(predict))
-
-	mux.HandleFunc("PUT /s3/files/{fileId}", log(putS3File))
-
-	mux.HandleFunc("/", log(func(w http.ResponseWriter, r *http.Request) {
+	h.NotFound = func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusNotFound)
-	}))
+	}
+	mux.HandleFunc("/", log(&h.NotFound))
 
 	fs.mux = mux
 	fs.server = server

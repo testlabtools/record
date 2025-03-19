@@ -32,8 +32,7 @@ func TestPredictCommand(t *testing.T) {
 			},
 			stdout: "^()$",
 			check: func(t *testing.T, srv *fake.FakeServer) {
-				// TODO
-				assert.Empty(t, srv.Files)
+				assert.Empty(t, srv.Predicts)
 			},
 		},
 		{
@@ -48,8 +47,8 @@ TestUploadCommand
 `,
 			stdout: "^(TestPredictCommand|TestUploadCommand)$",
 			check: func(t *testing.T, srv *fake.FakeServer) {
-				// TODO
-				assert.Empty(t, srv.Files)
+				assert.Len(t, srv.Predicts, 1)
+				assert.Len(t, srv.Predicts[0].TestFiles, 2)
 			},
 		},
 		{
@@ -72,8 +71,8 @@ $pwd$/app/web/quux.test.ts
 				},
 			},
 			check: func(t *testing.T, srv *fake.FakeServer) {
-				// TODO
-				assert.Empty(t, srv.Files)
+				assert.Len(t, srv.Predicts, 1)
+				assert.Len(t, srv.Predicts[0].TestFiles, 2)
 			},
 		},
 	}
