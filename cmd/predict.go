@@ -1,8 +1,10 @@
 package cmd
 
 import (
+	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 
 	"github.com/spf13/cobra"
 	"github.com/testlabtools/record"
@@ -17,9 +19,15 @@ var predictCmd = &cobra.Command{
 
 		setup := setupCommand(cmd, args)
 
-		wd, err := os.Getwd()
+		// Getwd can return any symlink and EvalSymlinks resolves the link to
+		// an absolute path.
+		link, err := os.Getwd()
 		if err != nil {
 			return err
+		}
+		wd, err := filepath.EvalSymlinks(link)
+		if err != nil {
+			return fmt.Errorf("failed to eval symlink of workdir %q: %w", link, err)
 		}
 
 		o := record.PredictOptions{
