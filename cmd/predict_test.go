@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"log/slog"
 	"os"
+	"path"
 	"strings"
 	"testing"
 
@@ -86,9 +87,12 @@ $pwd$/app/web/quux.test.ts
 			srv := fake.NewServer(t, l, client.Github)
 			defer srv.Close()
 
+			cwd, _ := os.Getwd()
+			cwd = path.Join(cwd, "testdata", "symlink")
+			srv.Env["PWD"] = cwd
+
 			ctx := context.WithValue(context.Background(), "env", srv.Env)
 
-			cwd, _ := os.Getwd()
 			stdin := strings.ReplaceAll(tt.stdin, "$pwd$", cwd)
 			ctx = context.WithValue(ctx, "stdin", strings.NewReader(stdin))
 

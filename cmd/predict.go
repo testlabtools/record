@@ -19,16 +19,15 @@ var predictCmd = &cobra.Command{
 
 		setup := setupCommand(cmd, args)
 
-		// Getwd can return any symlink and EvalSymlinks resolves the link to
-		// an absolute path.
-		link, err := os.Getwd()
-		if err != nil {
-			return err
-		}
+		// PWD can return any symlink and EvalSymlinks resolves the link to an
+		// absolute path.
+		link := setup.env["PWD"]
 		wd, err := filepath.EvalSymlinks(link)
 		if err != nil {
 			return fmt.Errorf("failed to eval symlink of workdir %q: %w", link, err)
 		}
+
+		setup.log.Debug("predict workdir", "wd", wd, "link", link)
 
 		o := record.PredictOptions{
 			Repo: cmd.Flag("repo").Value.String(),

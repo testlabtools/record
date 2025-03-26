@@ -33,7 +33,11 @@ func (p *Jest) Parse(r io.Reader) error {
 		if !strings.HasPrefix(line, "/") {
 			continue
 		}
-		p.tests = append(p.tests, line)
+		file, err := parseFile(line, p.options)
+		if err != nil {
+			return err
+		}
+		p.tests = append(p.tests, file)
 	}
 
 	return scanner.Err()
@@ -43,8 +47,7 @@ func (p *Jest) Format(files []string, w io.Writer) error {
 	var matches []string
 
 	for _, t := range files {
-		match := strings.TrimPrefix(t, p.options.WorkDir)
-		matches = append(matches, match)
+		matches = append(matches, t)
 	}
 
 	o := JestTestOutput{

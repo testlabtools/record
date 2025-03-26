@@ -182,6 +182,8 @@ func NewServer(t *testing.T, l *slog.Logger, ci client.CIProviderName) *FakeServ
 		assert.NotEmpty(req.CiRun.Group, "TESTLAB_GROUP")
 		assert.NotEmpty(req.GitSummary, "GitSummary")
 
+		l.Debug("got predict test files", "testFiles", req.TestFiles)
+
 		w.WriteHeader(http.StatusOK)
 		resp := client.PredictResponse{
 			TestFiles: req.TestFiles,

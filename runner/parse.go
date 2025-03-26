@@ -3,6 +3,8 @@ package runner
 import (
 	"fmt"
 	"io"
+	"path/filepath"
+	"strings"
 )
 
 type ParserOptions struct {
@@ -26,4 +28,13 @@ func New(name string, o ParserOptions) (Parser, error) {
 		return nil, fmt.Errorf("unknown runner format: %q", name)
 	}
 	return p(o), nil
+}
+
+func parseFile(input string, opt ParserOptions) (string, error) {
+	file, err := filepath.EvalSymlinks(input)
+	if err != nil {
+		return file, fmt.Errorf("failed to eval symlink of input file %q: %w", input, err)
+	}
+	file = strings.TrimPrefix(file, opt.WorkDir)
+	return file, nil
 }
