@@ -3,10 +3,10 @@ module github.com/testlabtools/record
 go 1.23.6
 
 require (
-	github.com/getsentry/sentry-go v0.31.1
+	github.com/getsentry/sentry-go v0.33.0
 	github.com/jstemmer/go-junit-report/v2 v2.1.0
 	github.com/klauspost/compress v1.18.0
-	github.com/lmittmann/tint v1.0.7
+	github.com/lmittmann/tint v1.1.0
 	github.com/neilotoole/slogt v1.1.0
 	github.com/oapi-codegen/oapi-codegen/v2 v2.4.1
 	github.com/oapi-codegen/runtime v1.1.1
